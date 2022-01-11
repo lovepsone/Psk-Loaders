@@ -77,6 +77,43 @@ load(Options: Object, onLoad : Function, onProgress : Function, onError : Functi
 * onProgress — Будет вызываться во время загрузки. Аргументом будет экземпляр XMLHttpRequest, который содержит байты .total и .loaded. Если сервер не устанавливает заголовок Content-Length; .total будет 0.
 * onError — Будет вызываться при ошибках.
 
+* Code Example:
+```js
+const loader = new PSKLoader();
+
+loader.load(
+    // resource URL
+    {url: './Mesh/example.pskx', PathMaterials: './'},
+
+    // onLoad callback
+    function(geometry, materials, skeleton) {
+
+		let mat = [];
+
+		for (let i = 0; i < materials.length; i++) {
+
+            const texture = new THREE.TextureLoader().load(`./${materials[i].Diffuse}.png`);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+
+            mat.push(new THREE.MeshBasicMaterial({map: texture}));
+        }
+
+        const mesh = new THREE.Mesh(geometry, mat);
+	},
+
+    // onProgress callback
+	function(xhr) {
+
+		console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+	},
+
+    // onError callback
+	function(error) {
+
+		console.log('An error happened' + error);
+	}
+```
 #### Методы class PSALoader
 ...in progress
 
