@@ -26,9 +26,9 @@ loader.load(
     // onLoad callback
     function(geometry, materials, skeleton) {
 
-		let mat = [];
+        let mat = [];
 
-		for (let i = 0; i < materials.length; i++) {
+        for (let i = 0; i < materials.length; i++) {
 
             const texture = new THREE.TextureLoader().load(`./${materials[i].Diffuse}.png`);
             texture.wrapS = THREE.RepeatWrapping;
@@ -88,9 +88,9 @@ loader.load(
     // onLoad callback
     function(geometry, materials, skeleton) {
 
-		let mat = [];
+        let mat = [];
 
-		for (let i = 0; i < materials.length; i++) {
+        for (let i = 0; i < materials.length; i++) {
 
             const texture = new THREE.TextureLoader().load(`./${materials[i].Diffuse}.png`);
             texture.wrapS = THREE.RepeatWrapping;
