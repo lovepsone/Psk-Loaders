@@ -2,9 +2,8 @@
 * @author lovepsone 2019 - 2021
 */
 
-// https://me3explorer.fandom.com/wiki/PSK_File_Format
-
 import * as THREE from './../libs/three.module.js';
+import {PSALoader} from './PSALoader.js';
 
 /*
     Chunks Headers :
@@ -90,7 +89,7 @@ class PSKLoader extends THREE.Loader {
 
         super(manager);
 
-        this.AnimLoader = null;
+        this.AnimLoader = new PSALoader();
         this.LastByte = 0;
         this.ByteLength = 0;
         this.Points = [];
@@ -102,7 +101,7 @@ class PSKLoader extends THREE.Loader {
         this.Skeleton = false;
     }
 
-    load(options, onLoad, onProgress, onError) {
+    load(Options, onLoad, onProgress, onError) {
 
         const scope = this, loader = new THREE.FileLoader(this.manager), geometry = new THREE.BufferGeometry();
         let resourcePath;
@@ -115,7 +114,7 @@ class PSKLoader extends THREE.Loader {
 			resourcePath = this.path;
 		} else {
 
-			resourcePath = THREE.LoaderUtils.extractUrlBase(options.url);
+			resourcePath = THREE.LoaderUtils.extractUrlBase((Options.url);
 		}
 
         loader.setPath(this.path);
@@ -123,7 +122,7 @@ class PSKLoader extends THREE.Loader {
 		loader.setRequestHeader(this.requestHeader);
 		loader.setWithCredentials(this.withCredentials);
 
-        loader.load(options.url, function(data) {
+        loader.load((Options.url, function(data) {
 
             try {
 
