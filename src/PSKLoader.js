@@ -90,6 +90,7 @@ class PSKLoader extends THREE.Loader {
         super(manager);
 
         this.AnimLoader = new PSALoader();
+        this.Animations = [];
         this.LastByte = 0;
         this.ByteLength = 0;
         this.Points = [];
@@ -114,7 +115,7 @@ class PSKLoader extends THREE.Loader {
 			resourcePath = this.path;
 		} else {
 
-			resourcePath = THREE.LoaderUtils.extractUrlBase((Options.url);
+			resourcePath = THREE.LoaderUtils.extractUrlBase(Options.url);
 		}
 
         loader.setPath(this.path);
@@ -122,7 +123,7 @@ class PSKLoader extends THREE.Loader {
 		loader.setRequestHeader(this.requestHeader);
 		loader.setWithCredentials(this.withCredentials);
 
-        loader.load((Options.url, function(data) {
+        loader.load(Options.url, function(data) {
 
             try {
 
@@ -222,12 +223,12 @@ class PSKLoader extends THREE.Loader {
                     geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
                 }
 
-                for (let i = 0; i < Material.length; i++) PromiseLoaders.push(new THREE.FileLoader().loadAsync(`${options.PatchMaterial}${Material[i].Name}.mat`));
+                for (let i = 0; i < Material.length; i++) PromiseLoaders.push(new THREE.FileLoader().loadAsync(`${Options.PathMaterials}${Material[i].Name}.mat`));
 
                 Promise.all(PromiseLoaders).then((values)=> {
 
                     for (let i = 0; i < values.length; i++) textures.push(scope.parseMaterial(values[i]));
-                    onLoad(geometry, textures, scope.Skeleton);
+                    onLoad(geometry, textures, scope.Skeleton, scope.Animations);
                 }, (error) => {
 
                     console.error(error);
