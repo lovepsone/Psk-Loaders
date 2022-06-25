@@ -1,5 +1,5 @@
 /*
-* @author lovepsone 2019 - 2021
+* @author lovepsone 2019 - 2022
 */
 
 import * as THREE from './../libs/three.module.js';
@@ -63,7 +63,7 @@ class PSALoader extends THREE.Loader {
         this.AnimKeys = [];
     }
 
-    load(url, onLoad, onProgress, onError) {
+    load(url, BonesMesh, onLoad, onProgress, onError) {
 
         const scope = this, loader = new THREE.FileLoader(this.manager);
         let resourcePath;
@@ -87,6 +87,7 @@ class PSALoader extends THREE.Loader {
         loader.load(url, function(data) {
 
             try {
+
                 scope.LastByte = 0;
                 scope.ByteLength = 0;
                 scope.BoneNames = [];
@@ -96,40 +97,48 @@ class PSALoader extends THREE.Loader {
                 scope.DataView = new DataView(data);
                 scope.parse(scope.HeaderChunk(data), data);
 
-                console.log(scope.BoneNames);
-                console.log(scope.AnimInfo);
-                console.log(scope.AnimKeys);
-                const AnimKeys = scope.AnimKeys, Bones = scope.BoneNames;
+                const Anim = scope.AnimInfo, AnimKeys = scope.AnimKeys, BonesAnim = scope.BoneNames;
                 let result = [];
 
-                 for (let i = 0; i < scope.AnimInfo.length; i++) {
+                for (let i = 0; i < Anim.length; i++) {
 
-                    const currentKeys = scope.AnimInfo[i].FirstRawFrame * scope.AnimInfo[i].TotalBones;
-                    const countFrames = scope.AnimInfo[i].NumRawFrames;
-                    const TotalBones = scope.AnimInfo[i].TotalBones;
+                    const CurrFrameAnim = Anim[i].FirstRawFrame * Anim[i].TotalBones;
+                    const countFrames = Anim[i].NumRawFrames;
+                    const RateScale = (Anim[i].AnimRate > 0.001) ? 1. / Anim[i].AnimRate : 1.;
 
                     let quat = [], pos = [], KeyframeTracks = [], times = [];
 
-                    for (let f = 0; f < countFrames; f++) {
+                    for (let Frame = 0; Frame < countFrames; Frame++) {
 
-                        for (let b = 0; b < TotalBones; b++) {
+                        for (let bone = 0; bone < Anim[i].TotalBones; bone++) {
 
-                            if (quat[b] == undefined) quat[b] = [];
-                            if (pos[b] == undefined) pos[b] = [];
-                            if (times[b] == undefined) times[b] = [];
+                            if (quat[bone] == undefined) quat[bone] = [];
+                            if (pos[bone] == undefined) pos[bone] = [];
+                            if (times[bone] == undefined) times[bone] = [];
 
-                            const id = currentKeys + f * TotalBones + b;
-                            const time = scope.AnimInfo[i].AnimRate / (scope.AnimInfo[i].TrackTime) / 100;
-                            quat[b].push(... AnimKeys[id].Orientation.toArray());
-                            pos[b].push(... AnimKeys[id].Position.toArray());
-                            times[b].push(time * f);
+                            if (BonesMesh[bone] && BonesMesh[bone].name.toLowerCase() == BonesAnim[bone].name.toLowerCase()) {
+
+                                const id = CurrFrameAnim + Frame * Anim[i].TotalBones + bone;
+                                const time = Anim[i].AnimRate / (Anim[i].TrackTime) / 3;
+                                if (bone == 0) AnimKeys[id].Orientation.invert();
+                                quat[bone].push(... AnimKeys[id].Orientation.toArray());
+                                pos[bone].push(... AnimKeys[id].Position.toArray());
+                                //times[bone].push(time * Frame);
+                                times[bone].push(RateScale * Frame);
+                            }
                         }
                     }
 
-                    for (let i = 0; i < TotalBones; i++) {
+                    for (let j = 0; j < Anim[i].TotalBones; j++) {
 
-                        KeyframeTracks.push(new THREE.VectorKeyframeTrack(Bones[i].Name +'.position', new Float32Array(times[i]), new Float32Array(pos[i])));
-                        KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(Bones[i].Name +'.quaternion', new Float32Array(times[i]), new Float32Array(quat[i])));
+                        if (BonesMesh[j] && BonesMesh[j].name.toLowerCase() == BonesAnim[j].name.toLowerCase()) {
+
+                            const t = new Float32Array(times[j]);
+                            const p = new Float32Array(pos[j]);
+                            const q = new Float32Array(quat[j]);
+                            KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesMesh[j].name}.position`, t, p));
+                            KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesMesh[j].name}.quaternion`, t, q));
+                        }
                     }
 
                     result.push(new THREE.AnimationClip(scope.AnimInfo[i].Name, undefined,  KeyframeTracks));
@@ -198,7 +207,7 @@ class PSALoader extends THREE.Loader {
         for (let i = 0; i < size; i++) {
 
             bones[i] = {};
-            bones[i].Name = THREE.LoaderUtils.decodeText(new Uint8Array(data, this.LastByte, BoneNamesBytes.Name)).split('\x00')[0];
+            bones[i].name = THREE.LoaderUtils.decodeText(new Uint8Array(data, this.LastByte, BoneNamesBytes.Name)).split('\x00')[0];
             this.LastByte +=  BoneNamesBytes.Name;
 
             bones[i].Flags = this.DataView.getUint32(this.LastByte, true);
@@ -218,8 +227,7 @@ class PSALoader extends THREE.Loader {
             this.LastByte += 4;
             const rw = this.DataView.getFloat32(this.LastByte, true);
             this.LastByte += 4;
-            bones[i].Rotation = new THREE.Quaternion(rx, rz, ry, rw);
-            //bones[i].Rotation = new THREE.Quaternion(rx, ry, rz, rw);
+            bones[i].Rotation = new THREE.Quaternion(rx, rz, ry *(-1), rw);
 
             const px = this.DataView.getFloat32(this.LastByte, true);
             this.LastByte += 4;
@@ -227,8 +235,7 @@ class PSALoader extends THREE.Loader {
             this.LastByte += 4;
             const pz = this.DataView.getFloat32(this.LastByte, true);
             this.LastByte += 4;
-            bones[i].Position = new THREE.Vector3(px, pz, py);
-            //bones[i].Position = new THREE.Vector3(px, py, pz);
+            bones[i].Position = new THREE.Vector3(px, pz, py *(-1));
 
             bones[i].Length = this.DataView.getFloat32(this.LastByte, true);
             this.LastByte += 4;
@@ -240,7 +247,6 @@ class PSALoader extends THREE.Loader {
             const sz = this.DataView.getFloat32(this.LastByte, true);
             this.LastByte += 4;
             bones[i].Size = new THREE.Vector3(sx, sz, sy);
-            //bones[i].Size = new THREE.Vector3(sx, sy, sz);
         }
         return bones;
     }
@@ -304,8 +310,7 @@ class PSALoader extends THREE.Loader {
             this.LastByte += 4;
             const pz = this.DataView.getFloat32(this.LastByte, true);
             this.LastByte += 4;
-            keys[i].Position = new THREE.Vector3(px, pz, py);
-            //keys[i].Position = new THREE.Vector3(px, py, pz);
+            keys[i].Position = new THREE.Vector3(px, pz, py *(-1));
 
             const rx = this.DataView.getFloat32(this.LastByte, true);
             this.LastByte += 4;
@@ -315,8 +320,7 @@ class PSALoader extends THREE.Loader {
             this.LastByte += 4;
             const rw = this.DataView.getFloat32(this.LastByte, true);
             this.LastByte += 4;
-            keys[i].Orientation = new THREE.Quaternion(rx, rz, ry, rw);
-            //keys[i].Orientation = new THREE.Quaternion(rx, ry, rz, rw);
+            keys[i].Orientation = new THREE.Quaternion(rx, rz, ry*(-1), rw*(-1));
 
             keys[i].Time =  this.DataView.getFloat32(this.LastByte, true);
             this.LastByte += AKeys.Time;
