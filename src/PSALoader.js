@@ -97,58 +97,65 @@ class PSALoader extends THREE.Loader {
                 scope.DataView = new DataView(data);
                 scope.parse(scope.HeaderChunk(data), data);
 
-                const Anim = scope.AnimInfo, AnimKeys = scope.AnimKeys, BonesAnim = scope.BoneNames;
-                let result = [];
-
-                for (let i = 0; i < Anim.length; i++) {
-
-                    const CurrFrameAnim = Anim[i].FirstRawFrame * Anim[i].TotalBones;
-                    const countFrames = Anim[i].NumRawFrames;
-                    const RateScale = (Anim[i].AnimRate > 0.001) ? 1. / Anim[i].AnimRate : 1.;
-
-                    let quat = [], pos = [], KeyframeTracks = [], times = [];
-
-                    for (let Frame = 0; Frame < countFrames; Frame++) {
-
-                        for (let bone = 0; bone < Anim[i].TotalBones; bone++) {
-
-                            if (quat[bone] == undefined) quat[bone] = [];
-                            if (pos[bone] == undefined) pos[bone] = [];
-                            if (times[bone] == undefined) times[bone] = [];
-
-                            if (BonesMesh[bone] && BonesMesh[bone].name.toLowerCase() == BonesAnim[bone].name.toLowerCase()) {
-
-                                const id = CurrFrameAnim + Frame * Anim[i].TotalBones + bone;
-                                const time = Anim[i].AnimRate / (Anim[i].TrackTime) / 3;
-                                if (bone == 0) AnimKeys[id].Orientation.invert();
-                                quat[bone].push(... AnimKeys[id].Orientation.toArray());
-                                pos[bone].push(... AnimKeys[id].Position.toArray());
-                                //times[bone].push(time * Frame);
-                                times[bone].push(RateScale * Frame);
-                            }
-                        }
-                    }
-
-                    for (let j = 0; j < Anim[i].TotalBones; j++) {
-
-                        if (BonesMesh[j] && BonesMesh[j].name.toLowerCase() == BonesAnim[j].name.toLowerCase()) {
-
-                            const t = new Float32Array(times[j]);
-                            const p = new Float32Array(pos[j]);
-                            const q = new Float32Array(quat[j]);
-                            KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesMesh[j].name}.position`, t, p));
-                            KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesMesh[j].name}.quaternion`, t, q));
-                        }
-                    }
-
-                    result.push(new THREE.AnimationClip(scope.AnimInfo[i].Name, undefined,  KeyframeTracks));
-                }
-                onLoad(result);
+                onLoad(scope.BbuildingSamplers(BonesMesh));
             } catch(e) {
 
                 console.error(e);
             }
         }, onProgress, onError);
+    }
+
+    BbuildingSamplers(BonesMesh) {
+
+        const scope = this; //check for empty AnimInfo, AnimKeys, BoneNames ?
+        const Anim = scope.AnimInfo, AnimKeys = scope.AnimKeys, BonesAnim = scope.BoneNames;
+        let result = [];
+
+        for (let i = 0; i < Anim.length; i++) {
+
+            const CurrFrameAnim = Anim[i].FirstRawFrame * Anim[i].TotalBones;
+            const countFrames = Anim[i].NumRawFrames;
+            const RateScale = (Anim[i].AnimRate > 0.001) ? 1. / Anim[i].AnimRate : 1.;
+
+            let quat = [], pos = [], KeyframeTracks = [], times = [];
+
+            for (let Frame = 0; Frame < countFrames; Frame++) {
+
+                for (let bone = 0; bone < Anim[i].TotalBones; bone++) {
+
+                    if (quat[bone] == undefined) quat[bone] = [];
+                    if (pos[bone] == undefined) pos[bone] = [];
+                    if (times[bone] == undefined) times[bone] = [];
+
+                    if (BonesMesh[bone] && BonesMesh[bone].name.toLowerCase() == BonesAnim[bone].name.toLowerCase()) {
+
+                        const id = CurrFrameAnim + Frame * Anim[i].TotalBones + bone;
+                        const time = Anim[i].AnimRate / (Anim[i].TrackTime) / 3;
+                        if (bone == 0) AnimKeys[id].Orientation.invert();
+                        quat[bone].push(... AnimKeys[id].Orientation.toArray());
+                        pos[bone].push(... AnimKeys[id].Position.toArray());
+                        //times[bone].push(time * Frame);
+                        times[bone].push(RateScale * Frame);
+                    }
+                }
+            }
+
+            for (let j = 0; j < Anim[i].TotalBones; j++) {
+
+                if (BonesMesh[j] && BonesMesh[j].name.toLowerCase() == BonesAnim[j].name.toLowerCase()) {
+
+                    const t = new Float32Array(times[j]);
+                    const p = new Float32Array(pos[j]);
+                    const q = new Float32Array(quat[j]);
+                    KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesMesh[j].name}.position`, t, p));
+                    KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesMesh[j].name}.quaternion`, t, q));
+                }
+            }
+
+            result.push(new THREE.AnimationClip(scope.AnimInfo[i].Name, undefined,  KeyframeTracks));
+        }
+
+        return result;
     }
 
     HeaderChunk(data) {
