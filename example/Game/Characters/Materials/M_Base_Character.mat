@@ -1,0 +1,6 @@
+Diffuse=T_FemaleBase_01_Body_ARM
+Normal=T_FemaleBase_01_Body_N
+Other[0]=T_FemaleBase_01_Body_BC
+Other[1]=T_Male_Body_TintMask
+Other[2]=arm_tattoo1
+Other[3]=arm_tattoo2

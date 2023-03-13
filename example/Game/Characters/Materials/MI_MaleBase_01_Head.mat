@@ -1,0 +1,15 @@
+Diffuse=T_MaleBase_01_Head_BC
+Normal=T_MaleBase_01_Head_N
+Other[0]=T_MaleBase_01_Head_ARM
+Other[1]=T_Male_Head_TintMask
+Other[2]=T_Male_Eyebrow_08_BC
+Other[3]=T_Male_Tattoo_Face_Stalker_01_ARM
+Other[4]=T_Male_Tattoo_Face_Stalker_01_BC
+Other[5]=T_Male_Tattoo_Face_Stalker_01_N
+Other[6]=T_MaleBase_HairMask
+Other[7]=no_beard
+Other[8]=T_Male_Eyebrow_06_BC
+Other[9]=male_wrinkles2
+Other[10]=T_Male_Tattoo_Face_Bandit_01_ARM
+Other[11]=T_Male_Tattoo_Face_Bandit_01_BC
+Other[12]=T_Male_Tattoo_Face_Bandit_01_N

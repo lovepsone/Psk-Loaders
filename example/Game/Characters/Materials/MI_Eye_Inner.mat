@@ -1,0 +1,4 @@
+Diffuse=eye_s
+Normal=eye_inner_N
+SpecPower=eye_s
+Other[0]=Male_eye_bc

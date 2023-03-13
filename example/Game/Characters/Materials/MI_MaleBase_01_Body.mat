@@ -1,0 +1,9 @@
+Diffuse=T_MaleBase_01_Body_Underwear_BC
+Normal=T_MaleBase_01_Body_Underwear_N
+Other[0]=T_MaleBase_01_Body_Underwear_ARM
+Other[1]=T_Male_Body_TintMask
+Other[2]=arm_tattoo2
+Other[3]=arm_tattoo1
+Other[4]=T_FemaleBase_01_Body_ARM
+Other[5]=T_FemaleBase_01_Body_BC
+Other[6]=T_FemaleBase_01_Body_N
