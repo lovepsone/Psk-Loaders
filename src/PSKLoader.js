@@ -1,5 +1,5 @@
 /*
-* @author lovepsone 2019 - 2022
+* @author lovepsone 2019 - 2023
 */
 
 import * as THREE from './../libs/three.module.js';
@@ -252,8 +252,15 @@ class PSKLoader extends THREE.Loader {
     parseMaterial(data) {
 
         const tmp = data.split('\r\n');
+        let result = {Diffuse: null, Normal: null};
 
-        return {Diffuse: tmp[0].split('=')[1], Normal: tmp[1].split('=')[1]};
+        if (tmp[0].split('=')[0] === 'Diffuse' && tmp[1].split('=')[0] == 'Normal') {
+
+            result.Diffuse = tmp[0].split('=')[1];
+            result.Normal = tmp[1].split('=')[1];
+        } else if (tmp[0].split('=')[0] === 'Normal') result.Normal = tmp[0].split('=')[1];
+
+        return result;//{Diffuse: tmp[0].split('=')[1], Normal: tmp[1].split('=')[1]};
     }
  
     parse(data, dataBytes) {
