@@ -47,18 +47,20 @@ class MainEngenie {
 		const changeTorso = fCharacters.add({Torso: 'TShirt'}, 'Torso').options(['TShirt', 'HazmatMK1', 'HazmatMK2', 'HazmatMK3', 'Heavy', 'Jacket1', 'Jacket2', 'JacketEdge1', 'JacketEdge2', 'JacketMilitary1', 'JacketMilitary2', 'JacketStalker1', 'JacketStalker2', 'Light', 'Medium']);
 		const changeLegs = fCharacters.add({Legs: 'Pants'}, 'Legs').options(['Pants', 'Heavy', 'Light', 'Medium', 'Bandit1', 'Bandit2', 'Edge1', 'Edge2', 'Military1', 'Military2', 'Military3', 'Stalker1', 'Stalker2']);
 		const changeBack = fCharacters.add({Back: 'none'}, 'Back').options(['none', 'Small', 'Medium', 'Large', 'OxygenMK1', 'OxygenMK2', 'OxygenMK3']);
+		const changeFeet = fCharacters.add({Feet: 'Sneakers'}, 'Feet').options(['Sneakers', 'Stalker2', 'Stalker1', 'Military2', 'Military1', 'Edge2', 'Edge1', 'Bandit']);
 
 		changeHelmet.onChange(function(e) { self.UpdateModel(e, 'helmet'); });
 		changeBack.onChange(function(e) { self.UpdateModel(e, 'back'); });
 		changeMask.onChange(function(e) { self.UpdateModel(e, 'mask'); });
 		changeTorso.onChange(function(e) { self.UpdateModel(e, 'torso'); });
 		changeLegs.onChange(function(e) { self.UpdateModel(e, 'legs'); });
+		changeFeet.onChange(function(e) { self.UpdateModel(e, 'feet'); });
 
 		//LOAD START CHARACTERS
-		/*this.UpdateModel('Male', 'neck');
+		this.UpdateModel('Male', 'neck');
 		this.UpdateModel('TShirt', 'torso');
 		this.UpdateModel('Pants', 'legs');
-		this.UpdateModel('Sneakers', 'feet');*/
+		this.UpdateModel('Sneakers', 'feet');
 		this.UpdateModel('Male', 'head');
 
 		window.addEventListener('resize', this.onRenderResize);

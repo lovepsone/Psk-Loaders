@@ -58,7 +58,8 @@ const HELMET = {
 const HEAD = {
 	'Male': {
 		id: 0,
-		file: './Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleBase_01_Head.psk'
+		file: './Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleBase_01_Head.psk',
+		texture: './Game/Characters/Textures/',
 	}
 };
 
@@ -88,7 +89,8 @@ const MASK = {
 const NECK = {
 	'Male': {
 		id: 0,
-		file: './Game/Characters/Male/Bodies/MaleBase_01_Body/SK_MaleBase_01_TorsoForTShirt.psk'
+		file: './Game/Characters/Male/Bodies/MaleBase_01_Body/SK_MaleBase_01_TorsoForTShirt.psk',
+		texture: './Game/Characters/Textures/',
 	}
 };
 
@@ -302,7 +304,51 @@ const BACK = {
 const FEET = {
 	'Sneakers': {
 		id: 0,
-		file: './Game/Characters/Male/Feet/Sneakers_01/SK_Sneakers_01.psk'
+		file: './Game/Characters/Male/Feet/Sneakers_01/SK_Sneakers_01.psk',
+		texture: './Game/Characters/Textures/Feet/',
+
+	},
+	'Stalker2': {
+		id: 0,
+		file: './Game/Characters/Male/Feet/Boots_Stalker_02/SK_Male_Boots_Stalker_02.psk',
+		texture: './Game/Characters/Textures/Feet/',
+
+	},
+	'Stalker1': {
+		id: 0,
+		file: './Game/Characters/Male/Feet/Boots_Stalker_01/SK_Male_Boots_Stalker_01.psk',
+		texture: './Game/Characters/Textures/Feet/',
+
+	},
+	'Military2': {
+		id: 0,
+		file: './Game/Characters/Male/Feet/Boots_Military_02/SK_Boots_Military_02.psk',
+		texture: './Game/Characters/Textures/Feet/',
+
+	},
+	'Military1': {
+		id: 0,
+		file: './Game/Characters/Male/Feet/Boots_Military_01/SK_Boots_Military_01.psk',
+		texture: './Game/Characters/Textures/Feet/',
+
+	},
+	'Edge2': {
+		id: 0,
+		file: './Game/Characters/Male/Feet/Boots_Edge_02/SK_Male_Boots_Edge_02.psk',
+		texture: './Game/Characters/Textures/Feet/',
+
+	},
+	'Edge1': {
+		id: 0,
+		file: './Game/Characters/Male/Feet/Boots_Edge_01/SK_Male_Boot_Edge_01.psk',
+		texture: './Game/Characters/Textures/Feet/',
+
+	},
+	'Bandit': {
+		id: 0,
+		file: './Game/Characters/Male/Feet/Male_Boots_Bandit_01/SK_Male_Boots_Bandit_01.psk',
+		texture: './Game/Characters/Textures/Feet/',
+
 	},
 };
 
