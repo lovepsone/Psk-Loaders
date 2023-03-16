@@ -205,7 +205,7 @@ class PSKLoader extends THREE.Loader {
                 for (let i = 0; i < Bones.length; i++) {
 
                     const b = new THREE.Bone();
-                    b.name = Bones[i].Name;
+                    b.name = Bones[i].Name.toLowerCase(); // fixed?
                     Bones[i].Rotation.conjugate();
                     b.applyQuaternion(Bones[i].Rotation);
                     b.position.copy(Bones[i].Position);
