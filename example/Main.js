@@ -11,7 +11,6 @@ import {CHARACTERS} from './confModel.js';
 
 let _renderer, _camera, _scene, mixer, _controls = null;
 const loaderPSK = new PSKLoader(), loaderPSA = new PSALoader(), clock = new THREE.Clock();
-let mesh, mesh2;
 let tCharacter = {'helmet': null, 'head': null, 'mask': null, 'neck': null, 'torso': null, 'hands': null, 'legs': null, 'back': null, 'feet': null};
 
 const MATERIALS = './Game/Characters/Materials/';
@@ -57,11 +56,20 @@ class MainEngenie {
 		changeFeet.onChange(function(e) { self.UpdateModel(e, 'feet'); });
 
 		//LOAD START CHARACTERS
-		this.UpdateModel('Male', 'neck');
-		this.UpdateModel('TShirt', 'torso');
-		this.UpdateModel('Pants', 'legs');
-		this.UpdateModel('Sneakers', 'feet');
+		//this.UpdateModel('Male', 'neck');
+		//this.UpdateModel('TShirt', 'torso');
+		//this.UpdateModel('Pants', 'legs');
+		//this.UpdateModel('Sneakers', 'feet');
 		this.UpdateModel('Male', 'head');
+
+		// load test anims
+		/*loaderPSA.load('./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.psa', tCharacter.torso.function(anims) {
+
+			tCharacter.torso.animations.push(anims);
+			mixer = new THREE.AnimationMixer(mesh);
+			mixer.clipAction(anims[0]).play();
+
+		});*/
 
 		window.addEventListener('resize', this.onRenderResize);
 
@@ -134,9 +142,21 @@ class MainEngenie {
 				tCharacter[type].bind(skeleton);
 
 				const skeletonHelper = new THREE.SkeletonHelper(tCharacter[type]);
-
-				//_scene.add(skeletonHelper);
+				_scene.add(skeletonHelper);
 				_scene.add(tCharacter[type]);
+
+if (type == 'head') {
+
+						loaderPSA.load(
+							'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.psa',
+							'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.config',
+							function(anims) {
+
+							tCharacter.head.animations.push(anims);
+							mixer = new THREE.AnimationMixer(tCharacter[type]);
+							mixer.clipAction(anims[0]).play();
+						});
+					}
 		});
 	}
 

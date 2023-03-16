@@ -61,9 +61,10 @@ class PSALoader extends THREE.Loader {
         this.BoneNames = [];
         this.AnimInfo = [];
         this.AnimKeys = [];
+        //this.cfgAnim = {};
     }
 
-    load(url, BonesMesh, onLoad, onProgress, onError) {
+    load(url, urlCfg, onLoad, onProgress, onError) {
 
         const scope = this, loader = new THREE.FileLoader(this.manager);
         let resourcePath;
@@ -97,7 +98,42 @@ class PSALoader extends THREE.Loader {
                 scope.DataView = new DataView(data);
                 scope.parse(scope.HeaderChunk(data), data);
 
-                onLoad(scope.BbuildingSamplers(BonesMesh));
+                // load config
+                scope.cfgAnim = {};
+
+                /*
+                bloks type
+                [AnimSet] mode 1 - bAnimRotationOnly 1(false), 0(true)
+                [UseTranslationBoneNames] mode 2 - use translation from animation, useful with bAnimRotationOnly=true only
+                [ForceMeshTranslationBoneNames] mode 3 - use translation from mesh
+                [RemoveTracks] mode 4, flag = trans - NO_TRANSLATION, rot - NO_ROTATION, all - NO_TRANSLATION | NO_ROTATION
+                */
+
+                new THREE.FileLoader().loadAsync(urlCfg).then((values)=> {
+
+                    const bloks = values.split(' ');
+
+                    for (let i = 0; i < bloks.length; i++) {
+
+                        const tmp =  bloks[i].split('\r\n');
+                        tmp[1] = tmp[1].replace(/[\[\]']+/g, '');
+
+                        for (let j = 2; j < tmp.length; j++) {
+
+                            const name = tmp[j].split('.')[0];
+                            const bone = Number(tmp[j].split('.')[1].split('=')[0]);
+                            const flag = tmp[j].split('.')[1].split('=')[1];
+
+                            if (!Array.isArray(scope.cfgAnim[name])) scope.cfgAnim[name] = [];
+                            scope.cfgAnim[name][bone] = {mode: tmp[1], flag: flag};
+                        }
+                    }
+
+                    onLoad(scope.BbuildingSamplers(scope.cfgAnim));
+                }, (error) => {
+
+                    console.error(error);
+                });
             } catch(e) {
 
                 console.error(e);
@@ -105,7 +141,7 @@ class PSALoader extends THREE.Loader {
         }, onProgress, onError);
     }
 
-    BbuildingSamplers(BonesMesh) {
+    BbuildingSamplers(cfg) {
 
         const scope = this; //check for empty AnimInfo, AnimKeys, BoneNames ?
         const Anim = scope.AnimInfo, AnimKeys = scope.AnimKeys, BonesAnim = scope.BoneNames;
@@ -127,28 +163,52 @@ class PSALoader extends THREE.Loader {
                     if (pos[bone] == undefined) pos[bone] = [];
                     if (times[bone] == undefined) times[bone] = [];
 
-                    if (BonesMesh[bone] && BonesMesh[bone].name.toLowerCase() == BonesAnim[bone].name.toLowerCase()) {
-
-                        const id = CurrFrameAnim + Frame * Anim[i].TotalBones + bone;
-                        const time = Anim[i].AnimRate / (Anim[i].TrackTime) / 3;
-                        if (bone == 0) AnimKeys[id].Orientation.invert();
-                        quat[bone].push(... AnimKeys[id].Orientation.toArray());
-                        pos[bone].push(... AnimKeys[id].Position.toArray());
-                        //times[bone].push(time * Frame);
-                        times[bone].push(RateScale * Frame);
-                    }
+                    const id = CurrFrameAnim + Frame * Anim[i].TotalBones + bone;
+                    const time = Anim[i].AnimRate / (Anim[i].TrackTime) / 3;
+                    if (bone == 0) AnimKeys[id].Orientation.invert();
+                    quat[bone].push(... AnimKeys[id].Orientation.toArray());
+                    pos[bone].push(... AnimKeys[id].Position.toArray());
+                    //times[bone].push(time * Frame);
+                    times[bone].push(RateScale * Frame);
                 }
             }
 
+            console.log(cfg[scope.AnimInfo[i].Name]);
+
             for (let j = 0; j < Anim[i].TotalBones; j++) {
 
-                if (BonesMesh[j] && BonesMesh[j].name.toLowerCase() == BonesAnim[j].name.toLowerCase()) {
+                if (cfg[scope.AnimInfo[i].Name][j] !== undefined) {
 
+                    /*
+                    bloks type
+                    [AnimSet] mode 1 - bAnimRotationOnly 1(false), 0(true)
+                    [UseTranslationBoneNames] mode 2 - use translation from animation, useful with bAnimRotationOnly=true only
+                    [ForceMeshTranslationBoneNames] mode 3 - use translation from mesh
+                    [RemoveTracks] mode 4, flag = trans - NO_TRANSLATION, rot - NO_ROTATION, all - NO_TRANSLATION | NO_ROTATION
+                    */
+
+                    switch(cfg[scope.AnimInfo[i].Name][j].mode) {
+
+                        case 'AnimSet':
+                            break;
+
+                        case 'UseTranslationBoneNames':
+                            break;
+
+                        case 'ForceMeshTranslationBoneNames':
+                            break;
+
+                        case 'RemoveTracks':
+                            break;
+                    }
+
+                } else {
                     const t = new Float32Array(times[j]);
                     const p = new Float32Array(pos[j]);
                     const q = new Float32Array(quat[j]);
-                    KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesMesh[j].name}.position`, t, p));
-                    KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesMesh[j].name}.quaternion`, t, q));
+
+                    KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.position`, t, p));
+                    KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.quaternion`, t, q));
                 }
             }
 
@@ -215,6 +275,7 @@ class PSALoader extends THREE.Loader {
 
             bones[i] = {};
             bones[i].name = THREE.LoaderUtils.decodeText(new Uint8Array(data, this.LastByte, BoneNamesBytes.Name)).split('\x00')[0];
+            bones[i].name = bones[i].name.toLowerCase();
             this.LastByte +=  BoneNamesBytes.Name;
 
             bones[i].Flags = this.DataView.getUint32(this.LastByte, true);
