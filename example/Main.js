@@ -9,12 +9,14 @@ import {CameraControls} from './CameraControls.js';
 import {GUI} from './lil-gui.module.min.js';
 import {CHARACTERS} from './confModel.js';
 
-let _renderer, _camera, _scene, mixer, _controls = null;
+let _renderer, _camera, _scene, mixer = null, _controls = null;
 const loaderPSK = new PSKLoader(), loaderPSA = new PSALoader(), clock = new THREE.Clock();
 let tCharacter = {'helmet': null, 'head': null, 'mask': null, 'neck': null, 'torso': null, 'hands': null, 'legs': null, 'back': null, 'feet': null};
-
+let tSkeleton = {'helmet': null, 'head': null, 'mask': null, 'neck': null, 'torso': null, 'hands': null, 'legs': null, 'back': null, 'feet': null, 'skeleton': null};
+const animGroup = new THREE.AnimationObjectGroup();
 const MATERIALS = './Game/Characters/Materials/';
 const TEXTURES = './Game/Characters/Textures/';
+let tAnimation;
 
 class MainEngenie {
 
@@ -48,6 +50,29 @@ class MainEngenie {
 		const changeBack = fCharacters.add({Back: 'none'}, 'Back').options(['none', 'Small', 'Medium', 'Large', 'OxygenMK1', 'OxygenMK2', 'OxygenMK3']);
 		const changeFeet = fCharacters.add({Feet: 'Sneakers'}, 'Feet').options(['Sneakers', 'Stalker2', 'Stalker1', 'Military2', 'Military1', 'Edge2', 'Edge1', 'Bandit']);
 
+		loaderPSA.load(
+			'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.psa',
+			'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.config',
+			function(anims) {
+
+				tAnimation = anims;
+					//mixer = new THREE.AnimationMixer(animGroup);
+					//mixer.clipAction(anims[0]).play();
+		});
+
+		const FAnim = panel.addFolder('Animation');
+		const changeAnim = FAnim.add({Anim: 'none'}, 'Anim').options(['none', 'test']);
+		changeAnim.onChange(function(e) { 
+
+			if (mixer == null) mixer = new THREE.AnimationMixer(animGroup);
+			if (e === 'test') {
+
+				mixer.clipAction(tAnimation[0]).play();
+			} else mixer.stopAllAction();
+
+			console.log(e);
+		});
+
 		changeHelmet.onChange(function(e) { self.UpdateModel(e, 'helmet'); });
 		changeBack.onChange(function(e) { self.UpdateModel(e, 'back'); });
 		changeMask.onChange(function(e) { self.UpdateModel(e, 'mask'); });
@@ -56,20 +81,11 @@ class MainEngenie {
 		changeFeet.onChange(function(e) { self.UpdateModel(e, 'feet'); });
 
 		//LOAD START CHARACTERS
-		//this.UpdateModel('Male', 'neck');
-		//this.UpdateModel('TShirt', 'torso');
-		//this.UpdateModel('Pants', 'legs');
-		//this.UpdateModel('Sneakers', 'feet');
+		this.UpdateModel('Sneakers', 'feet');
+		this.UpdateModel('TShirt', 'torso');
+		this.UpdateModel('Pants', 'legs');
+		this.UpdateModel('Male', 'neck');
 		this.UpdateModel('Male', 'head');
-
-		// load test anims
-		/*loaderPSA.load('./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.psa', tCharacter.torso.function(anims) {
-
-			tCharacter.torso.animations.push(anims);
-			mixer = new THREE.AnimationMixer(mesh);
-			mixer.clipAction(anims[0]).play();
-
-		});*/
 
 		window.addEventListener('resize', this.onRenderResize);
 
@@ -77,9 +93,16 @@ class MainEngenie {
 
 	UpdateModel(name, type) {
 
-		if (tCharacter[type] != null) _scene.remove(tCharacter[type]);
+		if (tCharacter[type] != null) {
+
+			tCharacter[type].skeleton.dispose();
+			animGroup.remove(tCharacter[type]);
+			animGroup.uncache(tCharacter[type]);
+			_scene.remove(tCharacter[type]);
+		}
 
 		tCharacter[type] = null;
+
 		if (name === 'none') return;
 
 		let Tchar = null;
@@ -123,40 +146,45 @@ class MainEngenie {
 				Tchar = CHARACTERS.FEET;
 				break;
 		}
-		let t;
-		if (Tchar[name].texture != undefined) t = Tchar[name].texture; else t = TEXTURES;
+
+		let urlTex;
+		if (Tchar[name].texture != undefined) urlTex = Tchar[name].texture; else urlTex = TEXTURES;
+
 		loaderPSK.load({url: Tchar[name].file, PathMaterials: MATERIALS}, function(geometry, textures, urlMaterial, skeleton) {
 
-				let materials = [];
-				for (let i = 0; i < textures.length; i++) {
+			let materials = [];
+			for (let i = 0; i < textures.length; i++) {
 	
-					if (textures[i].Diffuse == null) break;
-					const texture = new THREE.TextureLoader().load(`${t}${textures[i].Diffuse}.png`);
-					texture.wrapS = THREE.RepeatWrapping;
-					texture.wrapT = THREE.RepeatWrapping;
-					materials.push(new THREE.MeshBasicMaterial({map: texture, wireframe: false, side: THREE.DoubleSide}));
-				}
+				if (textures[i].Diffuse == null) break;
+				const texture = new THREE.TextureLoader().load(`${urlTex}${textures[i].Diffuse}.png`);
+				texture.wrapS = THREE.RepeatWrapping;
+				texture.wrapT = THREE.RepeatWrapping;
+				materials.push(new THREE.MeshBasicMaterial({map: texture, wireframe: false, side: THREE.DoubleSide}));
+			}
 
-				tCharacter[type] = new THREE.SkinnedMesh(geometry, materials);
-				tCharacter[type].add(skeleton.bones[0]);
-				tCharacter[type].bind(skeleton);
+			let matrix = null;
+			if (tSkeleton['head'] != null) {
+
+				tSkeleton[type] = tSkeleton['head'];
+				matrix = tCharacter['head'].bindMatrix;
+			}
+
+			if (tSkeleton[type] == null)  tSkeleton[type] = skeleton;
+			if (tSkeleton['head'] != null) tSkeleton[type] = tSkeleton['head'];
+
+			tCharacter[type] = new THREE.SkinnedMesh(geometry, materials);
+			tCharacter[type].name = type;
+			tCharacter[type].add(tSkeleton[type].bones[0]);
+			if (matrix != null) tCharacter[type].bind(tSkeleton[type], matrix); else tCharacter[type].bind(tSkeleton[type]);
+			_scene.add(tCharacter[type]);
+			animGroup.add(tCharacter[type]);
+
+			if (type == 'head') {
 
 				const skeletonHelper = new THREE.SkeletonHelper(tCharacter[type]);
 				_scene.add(skeletonHelper);
-				_scene.add(tCharacter[type]);
+			}
 
-if (type == 'head') {
-
-						loaderPSA.load(
-							'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.psa',
-							'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.config',
-							function(anims) {
-
-							tCharacter.head.animations.push(anims);
-							mixer = new THREE.AnimationMixer(tCharacter[type]);
-							mixer.clipAction(anims[0]).play();
-						});
-					}
 		});
 	}
 

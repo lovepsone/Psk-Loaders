@@ -128,7 +128,7 @@ const TORSO = {
 	'Jacket1': {
 		id: 5,
 		file: './Game/Characters/Male/Torso/Male_Jacket_Bandit_01/SK_Male_Jacket_Bandit_01.psk',
-		TypeHands: 'jaket',
+		TypeHands: 'shirt',
 		texture: './Game/Characters/Textures/Torso/',
 	},
 	'Jacket2': {
@@ -152,7 +152,7 @@ const TORSO = {
 	'JacketMilitary1': {
 		id: 9,
 		file: './Game/Characters/Male/Torso/Male_Jacket_Military_01/SK_Male_Jacket_Military_01.psk',
-		TypeHands: 'jaket',
+		TypeHands: 'shirt',
 		texture: './Game/Characters/Textures/Torso/',
 	},
 	'JacketMilitary2': {
