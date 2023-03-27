@@ -102,6 +102,49 @@ class PSKLoader extends THREE.Loader {
         this.Skeleton = false;
     }
 
+    loadAsync(Options, onProgress) {
+
+        const scope = this;
+
+        return new Promise(function(resolve, reject) {
+
+            scope.load(Options, resolve, onProgress, reject);
+        });
+    }
+
+    loadAndLOD(Options, onLoad, onProgress, onError) {
+
+        const scope = this;
+        let PromiseLoaders = [];
+
+        if (!Array.isArray(Options.LOD)) {
+
+            console.error('LOD is not array');
+            return;
+        }
+
+        for(let i = 0; i < Options.LOD.length; i++) {
+
+            const opt = {
+                url: Options.LOD[i],
+                PathMaterials: Options.PathMaterials
+            };
+            PromiseLoaders.push(scope.loadAsync(opt));
+        }
+
+        Promise.all(PromiseLoaders).then((geometryLOD)=> {
+ 
+            scope.load(Options, function(geometry, textures, urlMaterial, skeleton) {
+
+                onLoad(geometry, textures, urlMaterial, skeleton, geometryLOD);
+            });
+
+        }, (error) => {
+
+            console.error(error);
+        });
+    }
+
     load(Options, onLoad, onProgress, onError) {
 
         const scope = this, loader = new THREE.FileLoader(this.manager), geometry = new THREE.BufferGeometry();
@@ -236,7 +279,7 @@ class PSKLoader extends THREE.Loader {
                 Promise.all(PromiseLoaders).then((values)=> {
 
                     for (let i = 0; i < values.length; i++) textures.push(scope.parseMaterial(values[i]));
-                    onLoad(geometry, textures, Options.PathMaterials, scope.Skeleton/*, scope.Animations*/);
+                    onLoad(geometry, textures, Options.PathMaterials, scope.Skeleton);
                 }, (error) => {
 
                     console.error(error);
