@@ -173,8 +173,6 @@ class PSALoader extends THREE.Loader {
                 }
             }
 
-            console.log(cfg[scope.AnimInfo[i].Name]);
-
             for (let j = 0; j < Anim[i].TotalBones; j++) {
 
                 if (cfg[scope.AnimInfo[i].Name][j] !== undefined) {

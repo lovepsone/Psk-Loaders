@@ -187,6 +187,8 @@ class PSKLoader extends THREE.Loader {
                 let VertInfStart = [], VertInfNum = [], count = 0, skinIndices = [], skinWeights = []
                 const Points = scope.Points, Wedges = scope.Wedges, Faces = scope.Faces, Material = scope.Material, Bones = scope.Bones, RawBones = scope.RawBones;
 
+                geometry.name = Options.url;
+
                 for (let i = 0; i < RawBones.length; i++) {
 
                     count += 1;
@@ -290,6 +292,98 @@ class PSKLoader extends THREE.Loader {
                 console.error(e);
             }
         }, onProgress, onError);
+    }
+
+    loadSkeletonAsync(url, onProgress) {
+
+        const scope = this;
+
+        return new Promise(function(resolve, reject) {
+
+            scope.loadSkeleton(url, resolve, onProgress, reject);
+        });
+    }
+
+    loadSkeleton(url, onLoad, onProgress, onError) {
+
+        const scope = this, loader = new THREE.FileLoader(this.manager);
+        let resourcePath;
+
+        if (this.resourcePath !== '') {
+
+			resourcePath = this.resourcePath;
+		} else if (this.path !== '') {
+
+			resourcePath = this.path;
+		} else {
+
+			resourcePath = THREE.LoaderUtils.extractUrlBase(url);
+		}
+
+        loader.setPath(this.path);
+		loader.setResponseType('arraybuffer');
+		loader.setRequestHeader(this.requestHeader);
+		loader.setWithCredentials(this.withCredentials);
+
+        loader.load(url, function(data) {
+
+            try {
+
+                scope.LastByte = 0;
+                scope.ByteLength = 0;
+                scope.Bones = [];
+                scope.RawBones = [];
+                scope.Skeleton = false;
+                scope.ByteLength = data.byteLength;
+                scope.DataView = new DataView(data);
+                scope.parseToSkeleton(scope.HeaderChunk(data), data);
+
+                const Points = scope.Points, Wedges = scope.Wedges, Faces = scope.Faces, Material = scope.Material, Bones = scope.Bones, RawBones = scope.RawBones;
+
+
+                let listBone = [];
+
+                if (Bones.length > 0) Bones[0].Rotation.conjugate(); // is apply conjugate()? or invert() ?
+
+                for (let i = 0; i < Bones.length; i++) {
+
+                    const b = new THREE.Bone();
+                    b.name = Bones[i].Name.toLowerCase(); // fixed?
+                    Bones[i].Rotation.conjugate();
+                    b.applyQuaternion(Bones[i].Rotation);
+                    b.position.copy(Bones[i].Position);
+                    listBone.push(b);
+                }
+
+                for (let i = 1; i < Bones.length; i++) listBone[Bones[i].Parentindex].add(listBone[i]);
+                scope.Skeleton = new THREE.Skeleton(listBone);
+                onLoad(scope.Skeleton);
+
+            } catch(e) {
+
+                console.error(e);
+            }
+        }, onProgress, onError);
+    }
+
+    parseToSkeleton(data, dataBytes) {
+
+        switch(data.ChunkID) {
+
+            case 'ACTRHEAD':
+                break;
+
+            case 'REFSKELT':
+                this.Bones = this.ReadBones(data.DataCount, dataBytes);
+                break;
+
+            default:
+                this.LastByte = this.LastByte + data.DataCount * data.DataSize;
+                break;
+        }
+
+        if (this.LastByte == this.ByteLength) return;
+        this.parseToSkeleton(this.HeaderChunk(dataBytes), dataBytes);
     }
 
     parseMaterial(data) {
