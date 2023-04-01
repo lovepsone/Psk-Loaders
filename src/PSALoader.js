@@ -116,12 +116,15 @@ class PSALoader extends THREE.Loader {
                     for (let i = 0; i < bloks.length; i++) {
 
                         const tmp =  bloks[i].split('\r\n');
+
                         tmp[1] = tmp[1].replace(/[\[\]']+/g, '');
 
-                        for (let j = 2; j < tmp.length; j++) {
+                        for (let j = 2; j < tmp.length ; j++) {
+
+                            if (tmp[j] == '') continue;
 
                             const name = tmp[j].split('.')[0];
-                            const bone = Number(tmp[j].split('.')[1].split('=')[0]);
+                            const bone = tmp[j].split('.')[1].split('=')[0];
                             const flag = tmp[j].split('.')[1].split('=')[1];
 
                             if (!Array.isArray(scope.cfgAnim[name])) scope.cfgAnim[name] = [];
@@ -129,7 +132,7 @@ class PSALoader extends THREE.Loader {
                         }
                     }
 
-                    onLoad(scope.BbuildingSamplers(scope.cfgAnim));
+                    onLoad(scope.BuildingSamplers(scope.cfgAnim));
                 }, (error) => {
 
                     console.error(error);
@@ -141,7 +144,7 @@ class PSALoader extends THREE.Loader {
         }, onProgress, onError);
     }
 
-    BbuildingSamplers(cfg) {
+    BuildingSamplers(cfg) {
 
         const scope = this; //check for empty AnimInfo, AnimKeys, BoneNames ?
         const Anim = scope.AnimInfo, AnimKeys = scope.AnimKeys, BonesAnim = scope.BoneNames;
