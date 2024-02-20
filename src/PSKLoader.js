@@ -268,13 +268,17 @@ class PSKLoader extends THREE.Loader {
                 geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(posAttr), 3));
                 geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
                 geometry.setIndex(indices);
-                geometry.computeVertexNormals();
 
                 if (scope.Skeleton) {
 
                     geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
                     geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
                 }
+
+                geometry.computeVertexNormals();
+                geometry.computeBoundingBox();
+                geometry.normalizeNormals();
+                //geometry.clearGroups( );
 
                 for (let i = 0; i < Material.length; i++) PromiseLoaders.push(new THREE.FileLoader().loadAsync(`${Options.PathMaterials}${Material[i].Name}.mat`));
 
