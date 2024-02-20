@@ -12,13 +12,13 @@ import {CHARACTERS} from './confModel.js';
 let _renderer, _camera, _scene, mixer = null, _controls = null;
 const loaderPSK = new PSKLoader(), loaderPSA = new PSALoader(), clock = new THREE.Clock();
 let tCharacter = {'helmet': null, 'head': null, 'mask': null, 'neck': null, 'torso': null, 'hands': null, 'legs': null, 'back': null, 'feet': null, 'skeleton': null, 'matrix': null};
-let LODCharacter = {'helmet': null, 'head': null, 'mask': null, 'neck': null, 'torso': null, 'hands': null, 'legs': null, 'back': null, 'feet': null};
 
 const animGroup = new THREE.AnimationObjectGroup();
 const MATERIALS = './Game/Characters/Materials/';
 const TEXTURES = './Game/Characters/Textures/';
 let tAnimation;
-const lod1 = new THREE.LOD();
+const tLoader = new THREE.TextureLoader();
+
 
 class MainEngenie {
 
@@ -63,16 +63,15 @@ class MainEngenie {
 		});
 
 		const FAnim = panel.addFolder('Animation');
-		const changeAnim = FAnim.add({Anim: 'none'}, 'Anim').options(['none', 'test']);
+		const changeAnim = FAnim.add({Anim: 'none'}, 'Anim').options(['none', 'FP_MOB1_Idle_Loop']);
 		changeAnim.onChange(function(e) { 
 
 			if (mixer == null) mixer = new THREE.AnimationMixer(animGroup);
-			if (e === 'test') {
+			if (e === 'FP_MOB1_Idle_Loop') {
 
 				mixer.clipAction(tAnimation[0]).play();
 			} else mixer.stopAllAction();
 
-			console.log(e);
 		});
 
 		changeHelmet.onChange(function(e) { self.UpdateModel(e, 'helmet'); });
@@ -92,6 +91,71 @@ class MainEngenie {
 			self.UpdateModel('Male', 'neck');
 			self.UpdateModel('Male', 'head');
 		});
+
+		/*loaderPSK.load({url: './Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleBase_01_Head.psk', PathMaterials: MATERIALS}, function(geometry, textures, urlMaterial, skeleton) {
+
+			let materials = [];
+			for (let i = 0; i < textures.length; i++) {
+	
+				if (textures[i].Diffuse == null) break;
+
+				const texture = new THREE.TextureLoader().load(`./Game/Characters/Textures/${textures[i].Diffuse}.png`);
+				console.log(textures[i].Diffuse);
+				texture.wrapS = THREE.RepeatWrapping;
+				texture.wrapT = THREE.RepeatWrapping;
+
+				if (textures[i].Diffuse === "T_MaleBase_01_Head_BC") {
+
+					const t = new THREE.ShaderMaterial({
+						uniforms: {
+						  t_head: {value: texture},
+						  t_Eyebrow: {value: new THREE.TextureLoader().load(`./Game/Characters/Textures/Eyebrow/T_Male_Eyebrow_06_BC.png`)},
+						},
+						vertexShader: `
+						  varying vec2 v_uv;
+						  varying float v_textureIndex;
+						  void main() {
+							// This maps the uvs you mentioned to [0, 1, 2, 3]
+							v_textureIndex = step(0.5, uv.x) + step(0.5, uv.y) * 2.0;
+							v_uv = uv;
+							gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+						  }
+						`,
+						fragmentShader: `
+						  varying vec2 v_uv;
+						  varying float v_textureIndex;
+						  uniform sampler2D t_head;
+						  uniform sampler2D t_Eyebrow;
+
+						  void main() {
+
+							vec4 color = texture2D(t_head, v_uv);
+							vec4 color_brow = texture2D(t_Eyebrow, v_uv);
+
+							if (color_brow.r < 0.5) {
+								
+								//gl_FragColor = color_brow;
+								gl_FragColor = mix(color_brow, color, color.r);
+							} else {
+
+								gl_FragColor= color;
+							}
+						  }
+						`,
+					  });
+
+					  materials.push(t);
+
+				} else {
+
+					materials.push(new THREE.MeshBasicMaterial({map: texture, wireframe: false, side: THREE.DoubleSide}));
+				}
+			}
+
+			mesh = new THREE.Mesh(geometry, materials);
+			_scene.add(mesh);
+
+		});*/
 
 		window.addEventListener('resize', this.onRenderResize);
 
@@ -173,7 +237,7 @@ class MainEngenie {
 				const l = LOD.reverse();
 				l.push(geometry);
 				tCharacter[type] = new THREE.LOD();
-				let distance = 250;
+				let distance = 150;
 
 				for (let i = l.length - 1; i >= 0; i--) {
 
@@ -197,6 +261,12 @@ class MainEngenie {
 
 				_scene.add(tCharacter[type]);
 				animGroup.add(tCharacter[type].children[0]);
+
+				if (type == 'head') {
+
+					const skeletonHelper = new THREE.SkeletonHelper(tCharacter[type].children[0]);
+					_scene.add(skeletonHelper);
+				}
 			});
 
 		} else {
@@ -226,13 +296,6 @@ class MainEngenie {
 
 				_scene.add(tCharacter[type]);
 				animGroup.add(tCharacter[type]);
-
-				if (type == 'head') {
-
-					const skeletonHelper = new THREE.SkeletonHelper(tCharacter[type]);
-					_scene.add(skeletonHelper);
-				}
-
 			});
 		}
 	}
