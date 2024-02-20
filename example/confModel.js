@@ -1,6 +1,23 @@
 /*
 * @author lovepsone 2019 - 2023
 */
+const TATTOO = {
+	'Stalker': {
+		id: 0,
+		file: 'T_Male_Tattoo_Face_Stalker_01_BC.png',
+		position: [0, 164, 0],
+		rotation: [0, 0, 0, 1],
+		scale: [27, 27, 27]
+	},
+
+	'Bandit': {
+		id: 0,
+		file: 'T_Male_Tattoo_Face_Bandit_01_BC.png',
+		position: [0, 164, 10],
+		rotation: [0, 0, 0, 1],
+		scale: [27, 27, 27]
+	},
+};
 
 const HELMET = {
 	'Medium': {
@@ -576,4 +593,4 @@ const FEET = {
 	},
 };
 
-export const CHARACTERS = {HELMET, HEAD, MASK, NECK, TORSO, HANDS, LEGS, BACK, FEET};
+export const CHARACTERS = {HELMET, HEAD, MASK, NECK, TORSO, HANDS, LEGS, BACK, FEET, TATTOO};
