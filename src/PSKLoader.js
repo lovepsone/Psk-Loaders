@@ -99,7 +99,6 @@ class PSKLoader extends THREE.Loader {
         this.Material = [];
         this.Bones = [];
         this.RawBones = [];
-        this.Skeleton = false;
     }
 
     loadAsync(Options, onProgress) {
@@ -158,7 +157,7 @@ class PSKLoader extends THREE.Loader {
 
     load(Options, onLoad, onProgress, onError) {
 
-        const scope = this, loader = new THREE.FileLoader(this.manager), geometry = new THREE.BufferGeometry();
+        const scope = this, loader = new THREE.FileLoader(this.manager);
         let resourcePath;
 
         if (this.resourcePath !== '') {
@@ -180,6 +179,7 @@ class PSKLoader extends THREE.Loader {
         loader.load(Options.url, function(data) {
 
             try {
+                const geometry = new THREE.BufferGeometry();
                 scope.LastByte = 0;
                 scope.ByteLength = 0;
                 scope.Points = [];
@@ -188,7 +188,6 @@ class PSKLoader extends THREE.Loader {
                 scope.Material = [];
                 scope.Bones = [];
                 scope.RawBones = [];
-                scope.Skeleton = false;
                 scope.ByteLength = data.byteLength;
                 scope.DataView = new DataView(data);
                 scope.parse(scope.HeaderChunk(data), data);
@@ -197,7 +196,8 @@ class PSKLoader extends THREE.Loader {
                 Options.Build = Options.Build != undefined ? Options.Build : true;
 
                 let posAttr = [], indices = [], uv = [], indxMat = [{count: 0}], textures = [], PromiseLoaders = [];
-                let VertInfStart = [], VertInfNum = [], count = 0, skinIndices = [], skinWeights = []
+                let VertInfStart = [], VertInfNum = [], count = 0, skinIndices = [], skinWeights = [];
+                let Skeleton = false;
                 const Points = scope.Points, Wedges = scope.Wedges, Faces = scope.Faces, Material = scope.Material, Bones = scope.Bones, RawBones = scope.RawBones;
 
                 geometry.name = Options.url;
@@ -274,7 +274,7 @@ class PSKLoader extends THREE.Loader {
                     //if ( i > 1 && Bones[i].Parentindex != 0)
                     listBone[Bones[i].Parentindex].add(listBone[i]);
                 }
-                if (listBone.length > 0) scope.Skeleton = new THREE.Skeleton(listBone);
+                if (listBone.length > 0) Skeleton = new THREE.Skeleton(listBone);
 
                 if (Options.Build) {
 
@@ -282,7 +282,7 @@ class PSKLoader extends THREE.Loader {
                     geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
                     geometry.setIndex(indices);
 
-                    if (scope.Skeleton) {
+                    if (Skeleton) {
 
                         geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
                         geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
@@ -301,11 +301,11 @@ class PSKLoader extends THREE.Loader {
                     for (let i = 0; i < values.length; i++) textures.push(scope.parseMaterial(values[i]));
                     if (Options.Build) {
 
-                        onLoad(geometry, textures, Options.PathMaterials, scope.Skeleton);
+                        onLoad(geometry, textures, Options, Skeleton);
                     } else {
 
                         geometry.dispose();
-                        onLoad({position: posAttr, uv: uv, Index: indices, skinIndex: skinIndices, skinWeight: skinWeights, indexMaterial: indxMat}, textures, Options.PathMaterials, scope.Skeleton);
+                        onLoad({position: posAttr, uv: uv, Index: indices, skinIndex: skinIndices, skinWeight: skinWeights, indexMaterial: indxMat}, textures, Options, Skeleton);
                     }
                 }, (error) => {
 
@@ -351,7 +351,6 @@ class PSKLoader extends THREE.Loader {
                 scope.Material = [];
                 scope.Bones = [];
                 scope.RawBones = [];
-                scope.Skeleton = false;
                 scope.ByteLength = data.byteLength;
                 scope.DataView = new DataView(data);
                 scope.parseToSkeleton(scope.HeaderChunk(data), data);
@@ -408,8 +407,8 @@ class PSKLoader extends THREE.Loader {
                 }
 
                 for (let i = 1; i < Bones.length; i++) listBone[Bones[i].Parentindex].add(listBone[i]);
-                if (listBone.length > 0) scope.Skeleton = new THREE.Skeleton(listBone);
-                onLoad({Skeleton: scope.Skeleton, skinIndex: skinIndices, skinWeight: skinWeights});
+                if (listBone.length > 0) Skeleton = new THREE.Skeleton(listBone);
+                onLoad({Skeleton: Skeleton, skinIndex: skinIndices, skinWeight: skinWeights});
 
             } catch(e) {
 
