@@ -1,5 +1,5 @@
 /*
-* @author lovepsone 2019 - 2021
+* @author lovepsone 2019 - 2024
 */
 
 import * as THREE from './../libs/three.module.js';
@@ -8,10 +8,27 @@ import {PSALoader} from './../src/PSALoader.js';
 import {CameraControls} from './CameraControls.js';
 import {GUI} from './lil-gui.module.min.js';
 import {CHARACTERS} from './confModel.js';
+import {ANIMATIONS} from './confAnims.js';
 
 let _renderer, _camera, _scene, mixer = null, _controls = null;
 const loaderPSK = new PSKLoader(), loaderPSA = new PSALoader(), clock = new THREE.Clock();
-let tCharacter = {'helmet': null, 'head': null, 'mask': null, 'neck': null, 'torso': null, 'hands': null, 'legs': null, 'back': null, 'feet': null, 'skeleton': null, 'matrix': null};
+
+let tCharacter = {
+	'helmet': null,
+	'head': null,
+	'mask': null,
+	'neck': null,
+	'torso': null,
+	'hands': null,
+	'legs': null,
+	'back': null,
+	'feet': null,
+
+	'skeleton': null,
+	'matrix': null,
+	'skeletonHead': null,
+	'matrixHead': null,
+};
 
 const animGroup = new THREE.AnimationObjectGroup();
 const MATERIALS = './Game/Characters/Materials/';
@@ -53,8 +70,10 @@ class MainEngenie {
 		const changeFeet = fCharacters.add({Feet: 'Sneakers'}, 'Feet').options(['Sneakers', 'Stalker2', 'Stalker1', 'Military2', 'Military1', 'Edge2', 'Edge1', 'Bandit']);
 
 		loaderPSA.load(
-			'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.psa',
-			'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.config',
+			//'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.psa',
+			//'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.config',
+			ANIMATIONS.Lobby[1].file,
+			ANIMATIONS.Lobby[1].conf,
 			function(anims) {
 
 				tAnimation = anims;
@@ -64,6 +83,7 @@ class MainEngenie {
 
 		const FAnim = panel.addFolder('Animation');
 		const changeAnim = FAnim.add({Anim: 'none'}, 'Anim').options(['none', 'FP_MOB1_Idle_Loop']);
+
 		changeAnim.onChange(function(e) { 
 
 			if (mixer == null) mixer = new THREE.AnimationMixer(animGroup);
@@ -82,15 +102,11 @@ class MainEngenie {
 		changeFeet.onChange(function(e) { self.UpdateModel(e, 'feet'); });
 
 		//LOAD START CHARACTERS
-		loaderPSK.loadSkeletonAsync('./Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleAll_01_Head.psk').then((values)=> {
-
-			tCharacter.skeleton = values;
-			self.UpdateModel('Sneakers', 'feet');
-			self.UpdateModel('TShirt', 'torso');
-			self.UpdateModel('Pants', 'legs');
-			self.UpdateModel('Male', 'neck');
-			self.UpdateModel('Male', 'head');
-		});
+		self.UpdateModel('Male', 'head');
+		self.UpdateModel('Sneakers', 'feet');
+		self.UpdateModel('TShirt', 'torso');
+		self.UpdateModel('Pants', 'legs');
+		self.UpdateModel('Male', 'neck');
 
 		/*loaderPSK.load({url: './Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleBase_01_Head.psk', PathMaterials: MATERIALS}, function(geometry, textures, urlMaterial, skeleton) {
 
@@ -163,7 +179,7 @@ class MainEngenie {
 
 	UpdateModel(name, type) {
 
-		if (tCharacter[type] != null) {
+		/*if (tCharacter[type] != null) {
 
 			//tCharacter[type].skeleton.dispose();
 			animGroup.remove(tCharacter[type]);
@@ -171,8 +187,9 @@ class MainEngenie {
 			_scene.remove(tCharacter[type]);
 		}
 
-		tCharacter[type] = null;
 
+		tCharacter[type] = null; // you need to delete it from memory, is fixed
+*/
 		if (name === 'none') return;
 
 		let Tchar = null;
@@ -222,7 +239,22 @@ class MainEngenie {
 
 		if (Tchar[name].LOD) {
 
-			loaderPSK.loadAndLOD({url: Tchar[name].file, PathMaterials: MATERIALS, LOD: Tchar[name].LOD} , function(geometry, textures, urlMaterial, skeleton, LOD) {
+			loaderPSK.loadAndLOD({url: Tchar[name].file, PathMaterials: MATERIALS, LOD: Tchar[name].LOD, type: type} , function(geometry, textures, info, skeleton, LOD) {
+
+				const _type = info.type;
+
+				if (tCharacter[_type] != null) {
+
+					animGroup.remove(tCharacter[_type]);
+					animGroup.uncache(tCharacter[_type]);
+					_scene.remove(tCharacter[_type]);
+					//need dispose in memory
+				}
+
+				tCharacter[_type] = null; // you need to delete it from memory, is fixed
+
+				if (tCharacter.skeleton == null && _type !== 'head') tCharacter.skeleton = skeleton;
+				if (_type === 'head') { tCharacter.skeletonHead = skeleton; console.log(skeleton)};
 
 				let materials = [];
 				for (let i = 0; i < textures.length; i++) {
@@ -236,42 +268,67 @@ class MainEngenie {
 
 				const l = LOD.reverse();
 				l.push(geometry);
-				tCharacter[type] = new THREE.LOD();
-				let distance = 150;
+				tCharacter[_type] = new THREE.LOD();
+				let distance = 350;
 
 				for (let i = l.length - 1; i >= 0; i--) {
 
 					const LMesh = new THREE.SkinnedMesh(l[i], materials);
-					LMesh.add(tCharacter.skeleton.bones[0]);
-					LMesh.updateMatrix();
-					LMesh.matrixAutoUpdate = false;
 
-					if (tCharacter.matrix == null) {
+					if (_type === "head") {
 
-						LMesh.bind(tCharacter.skeleton);
-						tCharacter.matrix = LMesh.bindMatrix;
+						LMesh.add(tCharacter.skeletonHead.bones[0]);
+						LMesh.updateMatrix();
+						LMesh.matrixAutoUpdate = false;
+
+						if (tCharacter.matrixHead == null) {
+
+							LMesh.bind(tCharacter.skeletonHead);
+							tCharacter.matrixHead = LMesh.bindMatrix;
+						} else {
+
+							LMesh.bind(tCharacter.skeletonHead, tCharacter.matrixHead);
+						}
 					} else {
 
-						LMesh.bind(tCharacter.skeleton, tCharacter.matrix);
-					}
+						LMesh.add(tCharacter.skeleton.bones[0]);
+						LMesh.updateMatrix();
+						LMesh.matrixAutoUpdate = false;
 
-					tCharacter[type].addLevel(LMesh, distance);
+						if (tCharacter.matrix == null) {
+
+							LMesh.bind(tCharacter.skeleton);
+							tCharacter.matrix = LMesh.bindMatrix;
+						} else {
+
+							LMesh.bind(tCharacter.skeleton, tCharacter.matrix);
+						}
+					}
+					tCharacter[_type].addLevel(LMesh, distance);
 					distance += 50;
 				}
 
-				_scene.add(tCharacter[type]);
-				animGroup.add(tCharacter[type].children[0]);
-
-				if (type == 'head') {
-
-					const skeletonHelper = new THREE.SkeletonHelper(tCharacter[type].children[0]);
-					_scene.add(skeletonHelper);
-				}
+				_scene.add(tCharacter[_type]);
+				animGroup.add(tCharacter[_type].children[0]);
 			});
 
 		} else {
+			console.log('Need Fixed!!!!!!!');
+			loaderPSK.load({url: Tchar[name].file, PathMaterials: MATERIALS}, function(geometry, textures, info, skeleton) {
 
-			loaderPSK.load({url: Tchar[name].file, PathMaterials: MATERIALS}, function(geometry, textures, urlMaterial, skeleton) {
+				const _type = info.type;
+
+				if (tCharacter[_type] != null) {
+
+					animGroup.remove(tCharacter[_type]);
+					animGroup.uncache(tCharacter[_type]);
+					_scene.remove(tCharacter[_type]);
+					//need dispose in memory
+				}
+				tCharacter[_type] = null;
+
+				if (tCharacter.skeleton == null && _type !== 'head') tCharacter.skeleton = skeleton;
+				if (_type === 'head') tCharacter.skeletonHead = skeleton;
 
 				let materials = [];
 				for (let i = 0; i < textures.length; i++) {
@@ -283,19 +340,40 @@ class MainEngenie {
 					materials.push(new THREE.MeshBasicMaterial({map: texture, wireframe: false, side: THREE.DoubleSide}));
 				}
 
-				tCharacter[type] = new THREE.SkinnedMesh(geometry, materials);
-				tCharacter[type].name = type;
-				tCharacter[type].add(tCharacter.skeleton.bones[0]);
+				tCharacter[_type] = new THREE.SkinnedMesh(geometry, materials);
 
-				if (tCharacter.matrix == null) {
+				if (_type === "head") {
 
-					tCharacter[type].bind(tCharacter.skeleton);
-					tCharacter.matrix = tCharacter[type].bindMatrix;
+					/*LMesh.add(tCharacter.skeletonHead.bones[0]);
+					LMesh.updateMatrix();
+					LMesh.matrixAutoUpdate = false;
+
+					if (tCharacter.matrixHead == null) {
+
+						LMesh.bind(tCharacter.skeletonHead);
+						tCharacter.matrixHead = LMesh.bindMatrix;
+					} else {
+
+						LMesh.bind(tCharacter.skeletonHead, tCharacter.matrixHead);
+					}*/
+				} else {
+
+					tCharacter[_type].add(tCharacter.skeleton.bones[0]);
+					tCharacter[_type].updateMatrix();
+					tCharacter[_type].matrixAutoUpdate = false;
+
+					if (tCharacter.matrix == null) {
+
+						tCharacter[_type].bind(tCharacter.skeleton);
+						tCharacter.matrix = tCharacter[_type].bindMatrix;
+					} else {
+
+						tCharacter[_type].bind(tCharacter.skeleton, tCharacter.matrix);
+					}
 				}
-				else tCharacter[type].bind(tCharacter.skeleton, tCharacter.matrix);
 
-				_scene.add(tCharacter[type]);
-				animGroup.add(tCharacter[type]);
+				_scene.add(tCharacter[_type]);
+				animGroup.add(tCharacter[_type]);
 			});
 		}
 	}
