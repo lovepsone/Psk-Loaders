@@ -85,13 +85,14 @@ class MainEngenie {
 		changeAnim.onChange(function(e) { 
 
 			if (mixer == null) mixer = new THREE.AnimationMixer(animGroup);
-			// перед включением требуется сброс, need fixed !!!!
+
 			if (e !== 'none') {
 
 				for (let i = 0; i < tAnimation.length; i++) {
 
 					if (e == tAnimation[i][0].name) {
 
+						mixer.stopAllAction(); // is fixed?
 						mixer.clipAction(tAnimation[i][0]).play();
 						break
 					}
