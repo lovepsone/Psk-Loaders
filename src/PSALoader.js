@@ -61,10 +61,50 @@ class PSALoader extends THREE.Loader {
         this.BoneNames = [];
         this.AnimInfo = [];
         this.AnimKeys = [];
-        //this.cfgAnim = {};
     }
 
-    load(url, urlCfg, onLoad, onProgress, onError) {
+    loadAsync(Options, onProgress) {
+
+        const scope = this;
+
+        return new Promise(function(resolve, reject) {
+
+            scope.load(Options, resolve, onProgress, reject);
+        });
+    }
+
+    loadList(list, onLoad, onProgress, onError) {
+
+        const scope = this;
+        let PromiseLoaders = [];
+
+        if (!Array.isArray(list)) {
+
+            console.error('list anims is not array');
+            return;
+        }
+
+        for(let i = 0; i < list.length; i++) {
+
+            const opt = {
+                url: list[i].file,
+                urlCfg: list[i].conf
+            };
+
+            PromiseLoaders.push(scope.loadAsync(opt));
+        }
+
+        Promise.all(PromiseLoaders).then((anims)=> {
+ 
+            onLoad(anims);
+
+        }, (error) => {
+
+            console.error(error);
+        });
+    }
+
+    load(Options, onLoad, onProgress, onError) {
 
         const scope = this, loader = new THREE.FileLoader(this.manager);
         let resourcePath;
@@ -77,7 +117,7 @@ class PSALoader extends THREE.Loader {
 			resourcePath = this.path;
 		} else {
 
-			resourcePath = THREE.LoaderUtils.extractUrlBase(url);
+			resourcePath = THREE.LoaderUtils.extractUrlBase(Options.url);
 		}
 
         loader.setPath(this.path);
@@ -85,7 +125,7 @@ class PSALoader extends THREE.Loader {
 		loader.setRequestHeader(this.requestHeader);
 		loader.setWithCredentials(this.withCredentials);
 
-        loader.load(url, function(data) {
+        loader.load(Options.url, function(data) {
 
             try {
 
@@ -99,7 +139,8 @@ class PSALoader extends THREE.Loader {
                 scope.parse(scope.HeaderChunk(data), data);
 
                 // load config
-                scope.cfgAnim = {};
+                let cfgAnim = {};
+                const Anim = scope.AnimInfo, AnimKeys = scope.AnimKeys, BonesAnim = scope.BoneNames;
 
                 /*
                 bloks type
@@ -108,8 +149,7 @@ class PSALoader extends THREE.Loader {
                 [ForceMeshTranslationBoneNames] mode 3 - use translation from mesh
                 [RemoveTracks] mode 4, flag = trans - NO_TRANSLATION, rot - NO_ROTATION, all - NO_TRANSLATION | NO_ROTATION
                 */
-
-                new THREE.FileLoader().loadAsync(urlCfg).then((values)=> {
+                new THREE.FileLoader().loadAsync(Options.urlCfg).then((values)=> {
 
                     const bloks = values.split(' ');
 
@@ -127,12 +167,83 @@ class PSALoader extends THREE.Loader {
                             const bone = tmp[j].split('.')[1].split('=')[0];
                             const flag = tmp[j].split('.')[1].split('=')[1];
 
-                            if (!Array.isArray(scope.cfgAnim[name])) scope.cfgAnim[name] = [];
-                            scope.cfgAnim[name][bone] = {mode: tmp[1], flag: flag};
+                            if (!Array.isArray(cfgAnim[name])) cfgAnim[name] = [];
+                            cfgAnim[name][bone] = {mode: tmp[1], flag: flag};
                         }
                     }
 
-                    onLoad(scope.BuildingSamplers(scope.cfgAnim));
+                    let animation = [];
+
+                    for (let i = 0; i < Anim.length; i++) {
+
+                        const CurrFrameAnim = Anim[i].FirstRawFrame * Anim[i].TotalBones;
+                        const countFrames = Anim[i].NumRawFrames;
+                        const RateScale = (Anim[i].AnimRate > 0.001) ? 1. / Anim[i].AnimRate : 1.;
+
+                        let quat = [], pos = [], KeyframeTracks = [], times = [];
+
+                        for (let Frame = 0; Frame < countFrames; Frame++) {
+
+                            for (let bone = 0; bone < Anim[i].TotalBones; bone++) {
+
+                                if (quat[bone] == undefined) quat[bone] = [];
+                                if (pos[bone] == undefined) pos[bone] = [];
+                                if (times[bone] == undefined) times[bone] = [];
+
+                                const id = CurrFrameAnim + Frame * Anim[i].TotalBones + bone;
+                                const time = Anim[i].AnimRate / (Anim[i].TrackTime) / 3;
+
+                                if (bone == 0) AnimKeys[id].Orientation.conjugate();
+
+                                quat[bone].push(... AnimKeys[id].Orientation.toArray());
+                                pos[bone].push(... AnimKeys[id].Position.toArray());
+
+                                //times[bone].push(time * Frame);
+                                times[bone].push(RateScale * Frame);
+                            }
+                        }
+
+                        // возможно нужно исключить руут кость
+                        for (let j = 0; j < Anim[i].TotalBones; j++) {
+
+                            if (cfgAnim[Anim[i].Name][j] !== undefined) {
+
+                                /*
+                                bloks type
+                                [AnimSet] mode 1 - bAnimRotationOnly 1(false), 0(true)
+                                [UseTranslationBoneNames] mode 2 - use translation from animation, useful with bAnimRotationOnly=true only
+                                [ForceMeshTranslationBoneNames] mode 3 - use translation from mesh
+                                [RemoveTracks] mode 4, flag = trans - NO_TRANSLATION, rot - NO_ROTATION, all - NO_TRANSLATION | NO_ROTATION
+                                */
+                                switch(cfgAnim[Anim[i].Name][j].mode) {
+            
+                                    case 'AnimSet':
+                                        break;
+            
+                                    case 'UseTranslationBoneNames':
+                                        break;
+            
+                                    case 'ForceMeshTranslationBoneNames':
+                                        break;
+            
+                                    case 'RemoveTracks':
+                                        break;
+                                }
+
+                            } else {
+                                const t = new Float32Array(times[j]);
+                                const p = new Float32Array(pos[j]);
+                                const q = new Float32Array(quat[j]);
+                                KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.position`, t, p));
+                                KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.quaternion`, t, q));
+                            }
+
+                        }
+
+                        animation.push(new THREE.AnimationClip(Anim[i].Name, undefined,  KeyframeTracks));
+                    }
+
+                    onLoad(animation);
                 }, (error) => {
 
                     console.error(error);
@@ -142,85 +253,6 @@ class PSALoader extends THREE.Loader {
                 console.error(e);
             }
         }, onProgress, onError);
-    }
-
-    BuildingSamplers(cfg) {
-
-        const scope = this; //check for empty AnimInfo, AnimKeys, BoneNames ?
-        const Anim = scope.AnimInfo, AnimKeys = scope.AnimKeys, BonesAnim = scope.BoneNames;
-        let result = [];
-
-        for (let i = 0; i < Anim.length; i++) {
-
-            const CurrFrameAnim = Anim[i].FirstRawFrame * Anim[i].TotalBones;
-            const countFrames = Anim[i].NumRawFrames;
-            const RateScale = (Anim[i].AnimRate > 0.001) ? 1. / Anim[i].AnimRate : 1.;
-
-            let quat = [], pos = [], KeyframeTracks = [], times = [];
-
-            for (let Frame = 0; Frame < countFrames; Frame++) {
-
-                for (let bone = 0; bone < Anim[i].TotalBones; bone++) {
-
-                    if (quat[bone] == undefined) quat[bone] = [];
-                    if (pos[bone] == undefined) pos[bone] = [];
-                    if (times[bone] == undefined) times[bone] = [];
-
-                    const id = CurrFrameAnim + Frame * Anim[i].TotalBones + bone;
-                    const time = Anim[i].AnimRate / (Anim[i].TrackTime) / 3;
-
-                    if (bone == 0) AnimKeys[id].Orientation.conjugate();
-
-                    quat[bone].push(... AnimKeys[id].Orientation.toArray());
-                    pos[bone].push(... AnimKeys[id].Position.toArray());
-
-                    //times[bone].push(time * Frame);
-                    times[bone].push(RateScale * Frame);
-                }
-            }
-
-            // возможно нужно исключить руут кость
-            for (let j = 0; j < Anim[i].TotalBones; j++) {
-
-                if (cfg[scope.AnimInfo[i].Name][j] !== undefined) {
-
-                    /*
-                    bloks type
-                    [AnimSet] mode 1 - bAnimRotationOnly 1(false), 0(true)
-                    [UseTranslationBoneNames] mode 2 - use translation from animation, useful with bAnimRotationOnly=true only
-                    [ForceMeshTranslationBoneNames] mode 3 - use translation from mesh
-                    [RemoveTracks] mode 4, flag = trans - NO_TRANSLATION, rot - NO_ROTATION, all - NO_TRANSLATION | NO_ROTATION
-                    */
-
-                    switch(cfg[scope.AnimInfo[i].Name][j].mode) {
-
-                        case 'AnimSet':
-                            break;
-
-                        case 'UseTranslationBoneNames':
-                            break;
-
-                        case 'ForceMeshTranslationBoneNames':
-                            break;
-
-                        case 'RemoveTracks':
-                            break;
-                    }
-
-                } else {
-                    const t = new Float32Array(times[j]);
-                    const p = new Float32Array(pos[j]);
-                    const q = new Float32Array(quat[j]);
-
-                    KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.position`, t, p));
-                    KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.quaternion`, t, q));
-                }
-
-            }
-            result.push(new THREE.AnimationClip(scope.AnimInfo[i].Name, undefined,  KeyframeTracks));
-        }
-
-        return result;
     }
 
     HeaderChunk(data) {
