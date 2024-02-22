@@ -1,5 +1,5 @@
 /*
-* @author lovepsone 2019 - 2023
+* @author lovepsone 2019 - 2024
 */
 
 import * as THREE from './../libs/three.module.js';
@@ -168,14 +168,18 @@ class PSALoader extends THREE.Loader {
 
                     const id = CurrFrameAnim + Frame * Anim[i].TotalBones + bone;
                     const time = Anim[i].AnimRate / (Anim[i].TrackTime) / 3;
-                    if (bone == 0) AnimKeys[id].Orientation.invert();
+
+                    if (bone == 0) AnimKeys[id].Orientation.conjugate();
+
                     quat[bone].push(... AnimKeys[id].Orientation.toArray());
                     pos[bone].push(... AnimKeys[id].Position.toArray());
+
                     //times[bone].push(time * Frame);
                     times[bone].push(RateScale * Frame);
                 }
             }
 
+            // возможно нужно исключить руут кость
             for (let j = 0; j < Anim[i].TotalBones; j++) {
 
                 if (cfg[scope.AnimInfo[i].Name][j] !== undefined) {
@@ -211,8 +215,8 @@ class PSALoader extends THREE.Loader {
                     KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.position`, t, p));
                     KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.quaternion`, t, q));
                 }
-            }
 
+            }
             result.push(new THREE.AnimationClip(scope.AnimInfo[i].Name, undefined,  KeyframeTracks));
         }
 
