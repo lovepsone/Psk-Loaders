@@ -184,20 +184,45 @@ class MainEngenie {
 
 	}
 
+	dispose(data) {
+
+		if (data.type == 'LOD') {
+
+			for (let i = 0; i < data.children.length; i++) {
+
+				data.children[i].geometry.dispose();
+
+				if (Array.isArray(data.children[i].material)) {
+
+					for (let j = 0; j < data.children[i].material.length; j++) data.children[i].material[j].dispose();
+
+				} else data.children[i].material.dispose();
+			}
+
+			data.clear();
+		} else {
+
+			console.log(data);
+		}
+	}
+
 	UpdateModel(name, type) {
 
-		/*if (tCharacter[type] != null) {
+		const scope = this;
 
-			//tCharacter[type].skeleton.dispose();
-			animGroup.remove(tCharacter[type]);
-			animGroup.uncache(tCharacter[type]);
-			_scene.remove(tCharacter[type]);
+		if (name === 'none') {
+
+			if (tCharacter[type] != null) {
+
+				animGroup.remove(tCharacter[type]);
+				animGroup.uncache(tCharacter[type]);
+				_scene.remove(tCharacter[type]);
+				scope.dispose(tCharacter[type]); // testing cleaning memory
+			}
+
+			tCharacter[type] = null;
+			return;
 		}
-
-
-		tCharacter[type] = null; // you need to delete it from memory, is fixed
-*/
-		if (name === 'none') return;
 
 		let Tchar = null;
 
@@ -255,10 +280,10 @@ class MainEngenie {
 					animGroup.remove(tCharacter[_type]);
 					animGroup.uncache(tCharacter[_type]);
 					_scene.remove(tCharacter[_type]);
-					//need dispose in memory
+					scope.dispose(tCharacter[type]);
 				}
 
-				tCharacter[_type] = null; // you need to delete it from memory, is fixed
+				tCharacter[_type] = null;
 
 				if (tCharacter.skeleton == null && _type !== 'head') tCharacter.skeleton = skeleton;
 				if (_type === 'head') tCharacter.skeletonHead = skeleton;
@@ -281,6 +306,7 @@ class MainEngenie {
 				for (let i = l.length - 1; i >= 0; i--) {
 
 					const LMesh = new THREE.SkinnedMesh(l[i], materials);
+					LMesh.name = _type;
 
 					if (_type === "head") {
 
@@ -320,8 +346,8 @@ class MainEngenie {
 			});
 
 		} else {
-			console.log('Need Fixed!!!!!!!');
-			loaderPSK.load({url: Tchar[name].file, PathMaterials: MATERIALS}, function(geometry, textures, info, skeleton) {
+
+			loaderPSK.load({url: Tchar[name].file, PathMaterials: MATERIALS, type: type}, function(geometry, textures, info, skeleton) {
 
 				const _type = info.type;
 
@@ -330,8 +356,9 @@ class MainEngenie {
 					animGroup.remove(tCharacter[_type]);
 					animGroup.uncache(tCharacter[_type]);
 					_scene.remove(tCharacter[_type]);
-					//need dispose in memory
+					scope.dispose(tCharacter[type]);
 				}
+
 				tCharacter[_type] = null;
 
 				if (tCharacter.skeleton == null && _type !== 'head') tCharacter.skeleton = skeleton;
@@ -348,21 +375,22 @@ class MainEngenie {
 				}
 
 				tCharacter[_type] = new THREE.SkinnedMesh(geometry, materials);
+				tCharacter[_type].name = _type;
 
 				if (_type === "head") {
 
-					/*LMesh.add(tCharacter.skeletonHead.bones[0]);
-					LMesh.updateMatrix();
-					LMesh.matrixAutoUpdate = false;
+					//LMesh.add(tCharacter.skeletonHead.bones[0]);
+					//LMesh.updateMatrix();
+					//LMesh.matrixAutoUpdate = false;
 
-					if (tCharacter.matrixHead == null) {
+					//if (tCharacter.matrixHead == null) {
 
-						LMesh.bind(tCharacter.skeletonHead);
-						tCharacter.matrixHead = LMesh.bindMatrix;
-					} else {
+					//	LMesh.bind(tCharacter.skeletonHead);
+					//	tCharacter.matrixHead = LMesh.bindMatrix;
+					//} else {
 
-						LMesh.bind(tCharacter.skeletonHead, tCharacter.matrixHead);
-					}*/
+					//	LMesh.bind(tCharacter.skeletonHead, tCharacter.matrixHead);
+					//}
 				} else {
 
 					tCharacter[_type].add(tCharacter.skeleton.bones[0]);
