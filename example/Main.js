@@ -69,27 +69,33 @@ class MainEngenie {
 		const changeBack = fCharacters.add({Back: 'none'}, 'Back').options(['none', 'Small', 'Medium', 'Large', 'OxygenMK1', 'OxygenMK2', 'OxygenMK3']);
 		const changeFeet = fCharacters.add({Feet: 'Sneakers'}, 'Feet').options(['Sneakers', 'Stalker2', 'Stalker1', 'Military2', 'Military1', 'Edge2', 'Edge1', 'Bandit']);
 
-		loaderPSA.load(
-			//'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.psa',
-			//'./Game/Characters/Animations/FirstPerson/FreeHands/FP_MOB1_Idle_Loop.config',
-			ANIMATIONS.Lobby[1].file,
-			ANIMATIONS.Lobby[1].conf,
-			function(anims) {
+		loaderPSA.loadList(ANIMATIONS.Lobby, function(anims) {
 
-				tAnimation = anims;
-					//mixer = new THREE.AnimationMixer(animGroup);
-					//mixer.clipAction(anims[0]).play();
+			tAnimation = anims;
 		});
 
+		/*loaderPSA.load({url: ANIMATIONS.Lobby[1].file, urlCfg: ANIMATIONS.Lobby[1].conf}, function(anims) {
+
+				tAnimation = anims;
+		});*/
+
 		const FAnim = panel.addFolder('Animation');
-		const changeAnim = FAnim.add({Anim: 'none'}, 'Anim').options(['none', 'FP_MOB1_Idle_Loop']);
+		const changeAnim = FAnim.add({Anim: 'none'}, 'Anim').options(['none', 'Idle_additive', 'Lobby_back_man01_idle_01', 'Lobby_back_man02_idle_01', 'Lobby_back_man03_idle_01']);
 
 		changeAnim.onChange(function(e) { 
 
 			if (mixer == null) mixer = new THREE.AnimationMixer(animGroup);
-			if (e === 'FP_MOB1_Idle_Loop') {
+			// перед включением требуется сброс, need fixed !!!!
+			if (e !== 'none') {
 
-				mixer.clipAction(tAnimation[0]).play();
+				for (let i = 0; i < tAnimation.length; i++) {
+
+					if (e == tAnimation[i][0].name) {
+
+						mixer.clipAction(tAnimation[i][0]).play();
+						break
+					}
+				}
 			} else mixer.stopAllAction();
 
 		});
@@ -254,7 +260,7 @@ class MainEngenie {
 				tCharacter[_type] = null; // you need to delete it from memory, is fixed
 
 				if (tCharacter.skeleton == null && _type !== 'head') tCharacter.skeleton = skeleton;
-				if (_type === 'head') { tCharacter.skeletonHead = skeleton; console.log(skeleton)};
+				if (_type === 'head') tCharacter.skeletonHead = skeleton;
 
 				let materials = [];
 				for (let i = 0; i < textures.length; i++) {
