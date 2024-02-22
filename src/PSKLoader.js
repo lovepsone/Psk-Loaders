@@ -1,5 +1,5 @@
 /*
-* @author lovepsone 2019 - 2023
+* @author lovepsone 2019 - 2024
 */
 
 import * as THREE from './../libs/three.module.js';
@@ -112,6 +112,17 @@ class PSKLoader extends THREE.Loader {
         });
     }
 
+
+    loadSkeletonAsync(url, onProgress) {
+
+        const scope = this;
+
+        return new Promise(function(resolve, reject) {
+
+            scope.loadSkeleton(url, resolve, onProgress, reject);
+        });
+    }
+
     loadAndLOD(Options, onLoad, onProgress, onError) {
 
         const scope = this;
@@ -169,7 +180,6 @@ class PSKLoader extends THREE.Loader {
         loader.load(Options.url, function(data) {
 
             try {
-
                 scope.LastByte = 0;
                 scope.ByteLength = 0;
                 scope.Points = [];
@@ -182,6 +192,9 @@ class PSKLoader extends THREE.Loader {
                 scope.ByteLength = data.byteLength;
                 scope.DataView = new DataView(data);
                 scope.parse(scope.HeaderChunk(data), data);
+
+                Options.PathMaterials = Options.PathMaterials != undefined ? Options.PathMaterials : './';
+                Options.Build = Options.Build != undefined ? Options.Build : true;
 
                 let posAttr = [], indices = [], uv = [], indxMat = [{count: 0}], textures = [], PromiseLoaders = [];
                 let VertInfStart = [], VertInfNum = [], count = 0, skinIndices = [], skinWeights = []
@@ -232,7 +245,6 @@ class PSKLoader extends THREE.Loader {
 
                     if (indxMat[Faces[i].MaterialIndex] == undefined) indxMat[Faces[i].MaterialIndex] = {count: 0};
                     indxMat[Faces[i].MaterialIndex].count++;
-
                 }
 
                 let start = 0;
@@ -257,7 +269,6 @@ class PSKLoader extends THREE.Loader {
                     listBone.push(b);
                 }
 
-
                 for (let i = 1; i < Bones.length; i++) {
 
                     //if ( i > 1 && Bones[i].Parentindex != 0)
@@ -265,27 +276,37 @@ class PSKLoader extends THREE.Loader {
                 }
                 if (listBone.length > 0) scope.Skeleton = new THREE.Skeleton(listBone);
 
-                geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(posAttr), 3));
-                geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
-                geometry.setIndex(indices);
+                if (Options.Build) {
 
-                if (scope.Skeleton) {
+                    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(posAttr), 3));
+                    geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
+                    geometry.setIndex(indices);
 
-                    geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
-                    geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
+                    if (scope.Skeleton) {
+
+                        geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIndices, 4));
+                        geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
+                    }
+
+                    geometry.computeVertexNormals();
+                    geometry.computeBoundingBox();
+                    geometry.normalizeNormals();
+                    //geometry.clearGroups();
                 }
-
-                geometry.computeVertexNormals();
-                geometry.computeBoundingBox();
-                geometry.normalizeNormals();
-                //geometry.clearGroups( );
 
                 for (let i = 0; i < Material.length; i++) PromiseLoaders.push(new THREE.FileLoader().loadAsync(`${Options.PathMaterials}${Material[i].Name}.mat`));
 
                 Promise.all(PromiseLoaders).then((values)=> {
 
                     for (let i = 0; i < values.length; i++) textures.push(scope.parseMaterial(values[i]));
-                    onLoad(geometry, textures, Options.PathMaterials, scope.Skeleton);
+                    if (Options.Build) {
+
+                        onLoad(geometry, textures, Options.PathMaterials, scope.Skeleton);
+                    } else {
+
+                        geometry.dispose();
+                        onLoad({position: posAttr, uv: uv, Index: indices, skinIndex: skinIndices, skinWeight: skinWeights, indexMaterial: indxMat}, textures, Options.PathMaterials, scope.Skeleton);
+                    }
                 }, (error) => {
 
                     console.error(error);
@@ -296,16 +317,6 @@ class PSKLoader extends THREE.Loader {
                 console.error(e);
             }
         }, onProgress, onError);
-    }
-
-    loadSkeletonAsync(url, onProgress) {
-
-        const scope = this;
-
-        return new Promise(function(resolve, reject) {
-
-            scope.loadSkeleton(url, resolve, onProgress, reject);
-        });
     }
 
     loadSkeleton(url, onLoad, onProgress, onError) {
@@ -332,9 +343,12 @@ class PSKLoader extends THREE.Loader {
         loader.load(url, function(data) {
 
             try {
-
                 scope.LastByte = 0;
                 scope.ByteLength = 0;
+                scope.Points = [];
+                scope.Wedges = [];
+                scope.Faces = [];
+                scope.Material = [];
                 scope.Bones = [];
                 scope.RawBones = [];
                 scope.Skeleton = false;
@@ -342,8 +356,42 @@ class PSKLoader extends THREE.Loader {
                 scope.DataView = new DataView(data);
                 scope.parseToSkeleton(scope.HeaderChunk(data), data);
 
-                const Points = scope.Points, Wedges = scope.Wedges, Faces = scope.Faces, Material = scope.Material, Bones = scope.Bones, RawBones = scope.RawBones;
+                let VertInfStart = [], VertInfNum = [], count = 0, skinIndices = [], skinWeights = []
+                const Wedges = scope.Wedges, Bones = scope.Bones, RawBones = scope.RawBones;
 
+                for (let i = 0; i < RawBones.length; i++) {
+
+                    count += 1;
+
+                    if ((i == RawBones.length - 1) || (RawBones[i + 1].PointIndex != RawBones[i].PointIndex)) {
+
+                        VertInfStart[RawBones[i].PointIndex] = i - count + 1;
+                        VertInfNum[RawBones[i].PointIndex] = count;
+                        count = 0;
+                    }
+                }
+
+                for (let i = 0; i < Wedges.length; i++) {
+
+                    if (RawBones.length > 0) {
+
+                        const start   = VertInfStart[Wedges[i].PointIndex];
+                        const numInfs = VertInfNum[Wedges[i].PointIndex];
+
+                        for (let j = 0; j < 4; j++) {
+
+                            if (j < numInfs) {
+
+                                skinIndices.push(RawBones[start + j].BoneIndex);
+                                skinWeights.push(RawBones[start + j].Weight);
+                            } else {
+
+                                skinIndices.push(0);
+                                skinWeights.push(0);
+                            }
+                        }
+                    }
+                }
 
                 let listBone = [];
 
@@ -360,8 +408,8 @@ class PSKLoader extends THREE.Loader {
                 }
 
                 for (let i = 1; i < Bones.length; i++) listBone[Bones[i].Parentindex].add(listBone[i]);
-                scope.Skeleton = new THREE.Skeleton(listBone);
-                onLoad(scope.Skeleton);
+                if (listBone.length > 0) scope.Skeleton = new THREE.Skeleton(listBone);
+                onLoad({Skeleton: scope.Skeleton, skinIndex: skinIndices, skinWeight: skinWeights});
 
             } catch(e) {
 
@@ -377,8 +425,16 @@ class PSKLoader extends THREE.Loader {
             case 'ACTRHEAD':
                 break;
 
+            case 'VTXW0000':
+                this.Wedges = this.ReadWedges(data.DataCount);
+                break;
+
             case 'REFSKELT':
                 this.Bones = this.ReadBones(data.DataCount, dataBytes);
+                break;
+
+            case 'RAWWEIGHTS':
+                this.RawBones = this.ReadRawBones(data.DataCount);
                 break;
 
             default:
@@ -387,7 +443,7 @@ class PSKLoader extends THREE.Loader {
         }
 
         if (this.LastByte == this.ByteLength) return;
-        this.parseToSkeleton(this.HeaderChunk(dataBytes), dataBytes);
+        this.parse(this.HeaderChunk(dataBytes), dataBytes);
     }
 
     parseMaterial(data) {
@@ -440,7 +496,6 @@ class PSKLoader extends THREE.Loader {
                 break;
 
             default:
-                //console.log(data);
                 this.LastByte = this.LastByte + data.DataCount * data.DataSize;
                 break;
         }
