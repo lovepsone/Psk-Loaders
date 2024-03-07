@@ -3,39 +3,15 @@
 */
 
 import * as THREE from './../libs/three.module.js';
-import {PSKLoader} from './../src/PSKLoader.js';
-import {PSALoader} from './../src/PSALoader.js';
 import {CameraControls} from './CameraControls.js';
 import {GUI} from './lil-gui.module.min.js';
-import {CHARACTERS} from './confModel.js';
 import {ANIMATIONS} from './confAnims.js';
 
+import {Character} from './Character.js';
+
 let _renderer, _camera, _scene, mixer = null, _controls = null;
-const loaderPSK = new PSKLoader(), loaderPSA = new PSALoader(), clock = new THREE.Clock();
-
-let tCharacter = {
-	'helmet': null,
-	'head': null,
-	'mask': null,
-	'neck': null,
-	'torso': null,
-	'hands': null,
-	'legs': null,
-	'back': null,
-	'feet': null,
-
-	'skeleton': null,
-	'matrix': null,
-	'skeletonHead': null,
-	'matrixHead': null,
-};
-
-const animGroup = new THREE.AnimationObjectGroup();
-const MATERIALS = './Game/Characters/Materials/';
-const TEXTURES = './Game/Characters/Textures/';
-let tAnimation;
-const tLoader = new THREE.TextureLoader();
-
+const clock = new THREE.Clock();
+let model;
 
 class MainEngenie {
 
@@ -69,31 +45,25 @@ class MainEngenie {
 		const changeBack = fCharacters.add({Back: 'none'}, 'Back').options(['none', 'Small', 'Medium', 'Large', 'OxygenMK1', 'OxygenMK2', 'OxygenMK3']);
 		const changeFeet = fCharacters.add({Feet: 'Sneakers'}, 'Feet').options(['Sneakers', 'Stalker2', 'Stalker1', 'Military2', 'Military1', 'Edge2', 'Edge1', 'Bandit']);
 
-		loaderPSA.loadList(ANIMATIONS.Lobby, function(anims) {
+		model = new Character(_scene);
 
-			tAnimation = anims;
-		});
-
-		/*loaderPSA.load({url: ANIMATIONS.Lobby[1].file, urlCfg: ANIMATIONS.Lobby[1].conf}, function(anims) {
-
-				tAnimation = anims;
-		});*/
-
+		let names = ['none'];
+		for (let i = 0; i < ANIMATIONS.Lobby.length; i++) names.push(ANIMATIONS.Lobby[i].name);
 		const FAnim = panel.addFolder('Animation');
-		const changeAnim = FAnim.add({Anim: 'none'}, 'Anim').options(['none', 'Idle_additive', 'Lobby_back_man01_idle_01', 'Lobby_back_man02_idle_01', 'Lobby_back_man03_idle_01']);
+		const changeAnim = FAnim.add({Anim: 'none'}, 'Anim').options(names);
 
 		changeAnim.onChange(function(e) { 
 
-			if (mixer == null) mixer = new THREE.AnimationMixer(animGroup);
+			if (mixer == null) mixer = new THREE.AnimationMixer(model.getAnimationGroup());
 
 			if (e !== 'none') {
 
-				for (let i = 0; i < tAnimation.length; i++) {
+				for (let i = 0; i < model.getAnimations().length; i++) {
 
-					if (e == tAnimation[i][0].name) {
+					if (e == model.getAnimations()[i][0].name) {
 
 						mixer.stopAllAction(); // is fixed?
-						mixer.clipAction(tAnimation[i][0]).play();
+						mixer.clipAction(model.getAnimations()[i][0]).play();
 						break
 					}
 				}
@@ -101,19 +71,12 @@ class MainEngenie {
 
 		});
 
-		changeHelmet.onChange(function(e) { self.UpdateModel(e, 'helmet'); });
-		changeBack.onChange(function(e) { self.UpdateModel(e, 'back'); });
-		changeMask.onChange(function(e) { self.UpdateModel(e, 'mask'); });
-		changeTorso.onChange(function(e) { self.UpdateModel(e, 'torso'); });
-		changeLegs.onChange(function(e) { self.UpdateModel(e, 'legs'); });
-		changeFeet.onChange(function(e) { self.UpdateModel(e, 'feet'); });
-
-		//LOAD START CHARACTERS
-		self.UpdateModel('Male', 'head');
-		self.UpdateModel('Sneakers', 'feet');
-		self.UpdateModel('TShirt', 'torso');
-		self.UpdateModel('Pants', 'legs');
-		self.UpdateModel('Male', 'neck');
+		changeHelmet.onChange(function(e) { model.UpdateModel(e, 'helmet'); });
+		changeBack.onChange(function(e) { model.UpdateModel(e, 'back'); });
+		changeMask.onChange(function(e) { model.UpdateModel(e, 'mask'); });
+		changeTorso.onChange(function(e) { model.UpdateModel(e, 'torso'); });
+		changeLegs.onChange(function(e) { model.UpdateModel(e, 'legs'); });
+		changeFeet.onChange(function(e) { model.UpdateModel(e, 'feet'); });
 
 		/*loaderPSK.load({url: './Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleBase_01_Head.psk', PathMaterials: MATERIALS}, function(geometry, textures, urlMaterial, skeleton) {
 
@@ -182,235 +145,6 @@ class MainEngenie {
 
 		window.addEventListener('resize', this.onRenderResize);
 
-	}
-
-	dispose(data) {
-
-		if (data.type == 'LOD') {
-
-			for (let i = 0; i < data.children.length; i++) {
-
-				data.children[i].geometry.dispose();
-
-				if (Array.isArray(data.children[i].material)) {
-
-					for (let j = 0; j < data.children[i].material.length; j++) data.children[i].material[j].dispose();
-
-				} else data.children[i].material.dispose();
-			}
-
-			data.clear();
-		} else {
-
-			console.log(data);
-		}
-	}
-
-	UpdateModel(name, type) {
-
-		const scope = this;
-
-		if (name === 'none') {
-
-			if (tCharacter[type] != null) {
-
-				animGroup.remove(tCharacter[type]);
-				animGroup.uncache(tCharacter[type]);
-				_scene.remove(tCharacter[type]);
-				scope.dispose(tCharacter[type]); // testing cleaning memory
-			}
-
-			tCharacter[type] = null;
-			return;
-		}
-
-		let Tchar = null;
-
-		switch(type) {
-
-			case 'helmet':
-				Tchar = CHARACTERS.HELMET;
-				break;
-
-			case 'mask':
-				Tchar = CHARACTERS.MASK;
-				break;
-
-			case 'head':
-				Tchar = CHARACTERS.HEAD;
-				break;
-
-			case 'neck':
-				Tchar = CHARACTERS.NECK;
-				break;
-
-			case 'torso':
-				Tchar = CHARACTERS.TORSO;
-				this.UpdateModel(Tchar[name].TypeHands, 'hands'); //load hand as type torso
-				break;
-
-			case 'hands':
-				Tchar = CHARACTERS.HANDS;
-				break;
-
-			case 'legs':
-				Tchar = CHARACTERS.LEGS;
-				break;
-
-			case 'back':
-				Tchar = CHARACTERS.BACK;
-				break;
-
-			case 'feet':
-				Tchar = CHARACTERS.FEET;
-				break;
-		}
-
-		let urlTex;
-		if (Tchar[name].texture != undefined) urlTex = Tchar[name].texture; else urlTex = TEXTURES;
-
-		if (Tchar[name].LOD) {
-
-			loaderPSK.loadAndLOD({url: Tchar[name].file, PathMaterials: MATERIALS, LOD: Tchar[name].LOD, type: type} , function(geometry, textures, info, skeleton, LOD) {
-
-				const _type = info.type;
-
-				if (tCharacter[_type] != null) {
-
-					animGroup.remove(tCharacter[_type]);
-					animGroup.uncache(tCharacter[_type]);
-					_scene.remove(tCharacter[_type]);
-					scope.dispose(tCharacter[type]);
-				}
-
-				tCharacter[_type] = null;
-
-				if (tCharacter.skeleton == null && _type !== 'head') tCharacter.skeleton = skeleton;
-				if (_type === 'head') tCharacter.skeletonHead = skeleton;
-
-				let materials = [];
-				for (let i = 0; i < textures.length; i++) {
-		
-					if (textures[i].Diffuse == null) break;
-					const texture = new THREE.TextureLoader().load(`${urlTex}${textures[i].Diffuse}.png`);
-					texture.wrapS = THREE.RepeatWrapping;
-					texture.wrapT = THREE.RepeatWrapping;
-					materials.push(new THREE.MeshBasicMaterial({map: texture, wireframe: false, side: THREE.DoubleSide}));
-				}
-
-				const l = LOD.reverse();
-				l.push(geometry);
-				tCharacter[_type] = new THREE.LOD();
-				let distance = 350;
-
-				for (let i = l.length - 1; i >= 0; i--) {
-
-					const LMesh = new THREE.SkinnedMesh(l[i], materials);
-					LMesh.name = _type;
-
-					if (_type === "head") {
-
-						LMesh.add(tCharacter.skeletonHead.bones[0]);
-						LMesh.updateMatrix();
-						LMesh.matrixAutoUpdate = false;
-
-						if (tCharacter.matrixHead == null) {
-
-							LMesh.bind(tCharacter.skeletonHead);
-							tCharacter.matrixHead = LMesh.bindMatrix;
-						} else {
-
-							LMesh.bind(tCharacter.skeletonHead, tCharacter.matrixHead);
-						}
-					} else {
-
-						LMesh.add(tCharacter.skeleton.bones[0]);
-						LMesh.updateMatrix();
-						LMesh.matrixAutoUpdate = false;
-
-						if (tCharacter.matrix == null) {
-
-							LMesh.bind(tCharacter.skeleton);
-							tCharacter.matrix = LMesh.bindMatrix;
-						} else {
-
-							LMesh.bind(tCharacter.skeleton, tCharacter.matrix);
-						}
-					}
-					tCharacter[_type].addLevel(LMesh, distance);
-					distance += 50;
-				}
-
-				_scene.add(tCharacter[_type]);
-				animGroup.add(tCharacter[_type].children[0]);
-			});
-
-		} else {
-
-			loaderPSK.load({url: Tchar[name].file, PathMaterials: MATERIALS, type: type}, function(geometry, textures, info, skeleton) {
-
-				const _type = info.type;
-
-				if (tCharacter[_type] != null) {
-
-					animGroup.remove(tCharacter[_type]);
-					animGroup.uncache(tCharacter[_type]);
-					_scene.remove(tCharacter[_type]);
-					scope.dispose(tCharacter[type]);
-				}
-
-				tCharacter[_type] = null;
-
-				if (tCharacter.skeleton == null && _type !== 'head') tCharacter.skeleton = skeleton;
-				if (_type === 'head') tCharacter.skeletonHead = skeleton;
-
-				let materials = [];
-				for (let i = 0; i < textures.length; i++) {
-		
-					if (textures[i].Diffuse == null) break;
-					const texture = new THREE.TextureLoader().load(`${urlTex}${textures[i].Diffuse}.png`);
-					texture.wrapS = THREE.RepeatWrapping;
-					texture.wrapT = THREE.RepeatWrapping;
-					materials.push(new THREE.MeshBasicMaterial({map: texture, wireframe: false, side: THREE.DoubleSide}));
-				}
-
-				tCharacter[_type] = new THREE.SkinnedMesh(geometry, materials);
-				tCharacter[_type].name = _type;
-
-				if (_type === "head") {
-
-					//LMesh.add(tCharacter.skeletonHead.bones[0]);
-					//LMesh.updateMatrix();
-					//LMesh.matrixAutoUpdate = false;
-
-					//if (tCharacter.matrixHead == null) {
-
-					//	LMesh.bind(tCharacter.skeletonHead);
-					//	tCharacter.matrixHead = LMesh.bindMatrix;
-					//} else {
-
-					//	LMesh.bind(tCharacter.skeletonHead, tCharacter.matrixHead);
-					//}
-				} else {
-
-					tCharacter[_type].add(tCharacter.skeleton.bones[0]);
-					tCharacter[_type].updateMatrix();
-					tCharacter[_type].matrixAutoUpdate = false;
-
-					if (tCharacter.matrix == null) {
-
-						tCharacter[_type].bind(tCharacter.skeleton);
-						tCharacter.matrix = tCharacter[_type].bindMatrix;
-					} else {
-
-						tCharacter[_type].bind(tCharacter.skeleton, tCharacter.matrix);
-					}
-				}
-
-				_scene.add(tCharacter[_type]);
-				animGroup.add(tCharacter[_type]);
-			});
-		}
 	}
 
 	Render(frame) {
