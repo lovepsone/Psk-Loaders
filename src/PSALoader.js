@@ -95,7 +95,7 @@ class PSALoader extends THREE.Loader {
         }
 
         Promise.all(PromiseLoaders).then((anims)=> {
- 
+
             onLoad(anims);
 
         }, (error) => {
@@ -203,11 +203,12 @@ class PSALoader extends THREE.Loader {
                             }
                         }
 
-                        // возможно нужно исключить руут кость
+
                         for (let j = 0; j < Anim[i].TotalBones; j++) {
 
                             if (cfgAnim[Anim[i].Name][j] !== undefined) {
 
+                                console.log(quat[j]);
                                 /*
                                 bloks type
                                 [AnimSet] mode 1 - bAnimRotationOnly 1(false), 0(true)
@@ -216,18 +217,39 @@ class PSALoader extends THREE.Loader {
                                 [RemoveTracks] mode 4, flag = trans - NO_TRANSLATION, rot - NO_ROTATION, all - NO_TRANSLATION | NO_ROTATION
                                 */
                                 switch(cfgAnim[Anim[i].Name][j].mode) {
-            
+
                                     case 'AnimSet':
                                         break;
-            
+
                                     case 'UseTranslationBoneNames':
                                         break;
-            
+
                                     case 'ForceMeshTranslationBoneNames':
                                         break;
-            
-                                    case 'RemoveTracks':
-                                        break;
+
+                                    case 'RemoveTracks': {
+
+                                        switch(cfgAnim[Anim[i].Name][j].flag) {
+
+                                            case 'trans': {
+
+                                                const t = new Float32Array(times[j]);
+                                                const q = new Float32Array(quat[j]);
+                                                KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.quaternion`, t, q));
+                                            }
+                                                break;
+
+                                            case 'rot':
+                                                const t = new Float32Array(times[j]);
+                                                const p = new Float32Array(pos[j]);
+                                                KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.position`, t, p));
+                                                break;
+
+                                            case 'all':
+                                                break;
+                                        }
+                                    }
+                                    break;
                                 }
 
                             } else {
