@@ -233,23 +233,27 @@ class PSALoader extends THREE.Loader {
 
                                             case 'trans': {
 
-                                                const t = new Float32Array(times[j]);
-                                                const q = new Float32Array(quat[j]);
-                                                KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.quaternion`, t, q));
-                                            }
+                                                    const t = new Float32Array(times[j]);
+                                                    const q = new Float32Array(quat[j]);
+                                                    KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.quaternion`, t, q));
+                                                }
                                                 break;
 
-                                            case 'rot':
-                                                const t = new Float32Array(times[j]);
-                                                const p = new Float32Array(pos[j]);
-                                                KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.position`, t, p));
+                                            case 'rot': {
+
+                                                    const t = new Float32Array(times[j]);
+                                                    const p = new Float32Array(pos[j]);
+                                                    KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.position`, t, p));
+                                                }
                                                 break;
 
-                                            case 'all':
+                                            case 'all': {
+
+                                                }
                                                 break;
                                         }
                                     }
-                                    break;
+                                        break;
                                 }
 
                             } else {
