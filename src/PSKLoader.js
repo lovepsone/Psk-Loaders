@@ -274,7 +274,11 @@ class PSKLoader extends THREE.Loader {
                     //if ( i > 1 && Bones[i].Parentindex != 0)
                     listBone[Bones[i].Parentindex].add(listBone[i]);
                 }
-                if (listBone.length > 0) Skeleton = new THREE.Skeleton(listBone);
+                if (listBone.length > 0) {
+
+                    Skeleton = new THREE.Skeleton(listBone);
+                    Skeleton.calculateInverses();
+                }
 
                 if (Options.Build) {
 
