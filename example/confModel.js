@@ -95,11 +95,11 @@ const HELMET = {
 const HEAD = {
 	'Male': {
 		id: 0,
-		file: './Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleAll_01_Head.psk',
+		file: './Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleBase_01_Head.psk',
 		LOD: [
-			'./Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleAll_01_Head_Lod1.psk',
-			'./Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleAll_01_Head_Lod2.psk',
-			'./Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleAll_01_Head_Lod3.psk'
+			'./Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleBase_01_Head_Lod1.psk',
+			'./Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleBase_01_Head_Lod2.psk',
+			'./Game/Characters/Male/Bodies/MaleBase_01_Head/SK_MaleBase_01_Head_Lod3.psk'
 		],
 		texture: './Game/Characters/Textures/',
 	}
