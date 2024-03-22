@@ -210,7 +210,6 @@ class Character {
 				struct[_type].bind(skeleton);*/
 
 				if (_type === "head") {
-console.log(1);
 					//LMesh.add(tCharacter.skeletonHead.bones[0]);
 					//LMesh.updateMatrix();
 					//LMesh.matrixAutoUpdate = false;
@@ -224,23 +223,23 @@ console.log(1);
 					//	LMesh.bind(tCharacter.skeletonHead, tCharacter.matrixHead);
 					//}
 
-					struct[_type].add(skeleton.bones[0]);
+					struct[_type].add(struct.skeleton.bones[0]);
 					struct[_type].updateMatrix();
 					struct[_type].matrixAutoUpdate = false;
 					struct[_type].bind(skeleton);
 				} else {
 
-					struct[_type].add(skeleton[0]);
+					struct[_type].add(struct.skeleton.bones[0]);
 					struct[_type].updateMatrix();
 					struct[_type].matrixAutoUpdate = false;
 
 					if (struct.matrix == null) {
 
-						struct[_type].bind(skeleton);
+						struct[_type].bind(struct.skeleton);
 						struct.matrix = struct[_type].bindMatrix;
 					} else {
 
-						struct[_type].bind(skeleton, struct.matrix);
+						struct[_type].bind(struct.skeleton, struct.matrix);
 					}
 				}
 
@@ -298,8 +297,8 @@ console.log(1);
 
 		if (struct['head'] && struct['neck']) {
 
-			struct['head'].children[0].skeleton.bones[50].position.copy(struct['neck'].children[0].skeleton.bones[50].position);
-			struct['head'].children[0].skeleton.bones[50].quaternion.copy(struct['neck'].children[0].skeleton.bones[50].quaternion);
+			struct['head'].children[0].skeleton.bones[50].position.copy(struct['torso'].children[0].skeleton.bones[50].position);
+			struct['head'].children[0].skeleton.bones[50].quaternion.copy(struct['torso'].children[0].skeleton.bones[50].quaternion);
 		}
 	}
 
