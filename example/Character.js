@@ -210,7 +210,7 @@ class Character {
 				struct[_type].bind(skeleton);*/
 
 				if (_type === "head") {
-
+console.log(1);
 					//LMesh.add(tCharacter.skeletonHead.bones[0]);
 					//LMesh.updateMatrix();
 					//LMesh.matrixAutoUpdate = false;
@@ -268,8 +268,11 @@ class Character {
 			data.clear();
 		} else {
 
-			// вычестить если не лод объект, иначе висит в памяти
-			console.log(data);
+			data.geometry.dispose();
+			if (Array.isArray(data.material)) {
+
+				for (let j = 0; j < data.material.length; j++) data.material[j].dispose();
+			} else data.material.dispose();
 		}
 	}
 
