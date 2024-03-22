@@ -8,6 +8,8 @@ import {PSALoader} from './../src/PSALoader.js';
 import {CHARACTERS} from './confModel.js';
 import {ANIMATIONS} from './confAnims.js';
 
+//import {CCDIKSolver, CCDIKHelper} from './CCDIKSolver.js';
+
 const loaderModel = new PSKLoader(), loaderAnimations = new PSALoader(), MATERIALS = './Game/Characters/Materials/', TEXTURES = './Game/Characters/Textures/';
 const AnimationGroup = new THREE.AnimationObjectGroup();
 
@@ -28,7 +30,7 @@ let struct = {
 	'matrixHead': null,
 };
 
-let _scene = null, LodDistance = 300, Animations = null;
+let _scene = null, LodDistance = 300, Animations = null, skeletonHelper = null;
 
 const tHead = new THREE.AnimationObjectGroup();
 
@@ -55,6 +57,21 @@ class Character {
 
         const scope = this;
 		let Tchar = null, urlTexture;
+
+		// требуется оптимизация кода, ибо повтаряемся
+		if (name === 'none') {
+
+			if (struct[type] != null) {
+
+				AnimationGroup.remove(struct[type]);
+				AnimationGroup.uncache(struct[type]);
+				_scene.remove(struct[type]);
+				scope.dispose(struct[type]);
+			}
+
+			struct[type] = null;
+			return;
+		}
 
 		switch(type) {
 
@@ -122,6 +139,8 @@ class Character {
 							LMesh.bind(struct.skeletonHead);
 							struct.matrixHead = LMesh.bindMatrix;
 						} else LMesh.bind(struct.skeletonHead, struct.matrixHead);
+
+						scope.setHelperSkelet(LMesh);
 
 					} else {
 
@@ -241,7 +260,7 @@ class Character {
 
 	loadAnimations() {
 
-		loaderAnimations.loadList(ANIMATIONS.Lobby, function(anims) {
+		loaderAnimations.loadList(ANIMATIONS.InPlace, function(anims) {
 
 			Animations = anims;
 		});
@@ -255,6 +274,29 @@ class Character {
 	getAnimations() {
 
 		return Animations;
+	}
+
+	UpdataHead() {
+
+		if (struct['head'] && struct['neck']) {
+
+			struct['head'].children[0].skeleton.bones[50].position.copy(struct['neck'].children[0].skeleton.bones[50].position);
+			struct['head'].children[0].skeleton.bones[50].quaternion.copy(struct['neck'].children[0].skeleton.bones[50].quaternion);
+		}
+	}
+
+	setHelperSkelet(mesh, isVisible = true) {
+
+		if (skeletonHelper == null) {
+
+			skeletonHelper = new THREE.SkeletonHelper(mesh);
+			skeletonHelper.visible = isVisible;
+			_scene.add(skeletonHelper);
+		} else skeletonHelper.visible = isVisible;
+	}
+
+	getTest() {
+		return struct['head'];
 	}
 }
 

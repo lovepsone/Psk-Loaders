@@ -48,7 +48,7 @@ class MainEngenie {
 		model = new Character(_scene);
 
 		let names = ['none'];
-		for (let i = 0; i < ANIMATIONS.Lobby.length; i++) names.push(ANIMATIONS.Lobby[i].name);
+		for (let i = 0; i < ANIMATIONS.InPlace.length; i++) names.push(ANIMATIONS.InPlace[i].name);
 		const FAnim = panel.addFolder('Animation');
 		const changeAnim = FAnim.add({Anim: 'none'}, 'Anim').options(names);
 
@@ -60,11 +60,11 @@ class MainEngenie {
 
 				for (let i = 0; i < model.getAnimations().length; i++) {
 
-					if (e == model.getAnimations()[i][0].name) {
+					if (e == model.getAnimations()[i].animation[0].name) {
 
 						mixer.stopAllAction(); // is fixed?
-						mixer.clipAction(model.getAnimations()[i][0]).play();
-						break
+						mixer.clipAction(model.getAnimations()[i].animation[0]).play();
+						break;
 					}
 				}
 			} else mixer.stopAllAction();
@@ -149,7 +149,11 @@ class MainEngenie {
 
 	Render(frame) {
 
-		if (mixer) mixer.update(clock.getDelta());
+		if (mixer) {
+			mixer.update(clock.getDelta());
+			model?.UpdataHead();
+		}
+
 		_renderer.render(_scene, _camera);
 	}
 	
