@@ -94,7 +94,7 @@ class Character {
 
 			loaderModel.loadAndLOD({url: Tchar[name].file, PathMaterials: MATERIALS, LOD: Tchar[name].LOD, type: type} , function(geometry, textures, info, skeleton, LOD) {
 
-				const _type = info.type;
+				const _type = info.type, lodGeometry = LOD.reverse();
 
 				if (struct[_type] != null) {
 
@@ -118,15 +118,25 @@ class Character {
 					materials.push(new THREE.MeshBasicMaterial({map: texture, wireframe: false, side: THREE.DoubleSide}));
 				}
 
-				const l = LOD.reverse();
-				l.push(geometry);
-				l.reverse();
+				lodGeometry.push(geometry);
+				lodGeometry.reverse();
 				struct[_type] = new THREE.LOD();
+				struct[_type].name = _type;
 
-				for (let i = l.length - 1; i >= 0; i--) {
+				for (let i = lodGeometry.length - 1; i >= 0; i--) {
 
-					const LMesh = new THREE.SkinnedMesh(l[i], materials);
+					const LMesh = new THREE.SkinnedMesh(lodGeometry[i], materials);
 					LMesh.name = _type;
+
+					/*LMesh.add(skeleton.bones[0]);
+					LMesh.updateMatrix();
+					LMesh.matrixAutoUpdate = false;
+					LMesh.bind(skeleton);
+					if (_type === "head") scope.setHelperSkelet(LMesh);
+
+					struct[_type].addLevel(LMesh, LodDistance + i * 50);
+					struct[_type].updateMatrix();
+					struct[_type].matrixAutoUpdate = false;*/
 
 					if (_type === "head") {
 
@@ -194,6 +204,11 @@ class Character {
 				struct[_type] = new THREE.SkinnedMesh(geometry, materials);
 				struct[_type].name = _type;
 
+				/*struct[_type].add(skeleton.bones[0]);
+				struct[_type].updateMatrix();
+				struct[_type].matrixAutoUpdate = false;
+				struct[_type].bind(skeleton);*/
+
 				if (_type === "head") {
 
 					//LMesh.add(tCharacter.skeletonHead.bones[0]);
@@ -209,23 +224,23 @@ class Character {
 					//	LMesh.bind(tCharacter.skeletonHead, tCharacter.matrixHead);
 					//}
 
-					struct[_type].add(struct.skeletonHead.bones[0]);
+					struct[_type].add(skeleton.bones[0]);
 					struct[_type].updateMatrix();
 					struct[_type].matrixAutoUpdate = false;
-					struct[_type].bind(struct.skeletonHead);
+					struct[_type].bind(skeleton);
 				} else {
 
-					struct[_type].add(struct.skeleton.bones[0]);
+					struct[_type].add(skeleton[0]);
 					struct[_type].updateMatrix();
 					struct[_type].matrixAutoUpdate = false;
 
 					if (struct.matrix == null) {
 
-						struct[_type].bind(struct.skeleton);
+						struct[_type].bind(skeleton);
 						struct.matrix = struct[_type].bindMatrix;
 					} else {
 
-						struct[_type].bind(struct.skeleton, struct.matrix);
+						struct[_type].bind(skeleton, struct.matrix);
 					}
 				}
 
@@ -285,7 +300,7 @@ class Character {
 		}
 	}
 
-	setHelperSkelet(mesh, isVisible = true) {
+	setHelperSkelet(mesh, isVisible = false) {
 
 		if (skeletonHelper == null) {
 
@@ -295,8 +310,9 @@ class Character {
 		} else skeletonHelper.visible = isVisible;
 	}
 
-	getTest() {
-		return struct['head'];
+	getDataCharacters() {
+
+		return struct;
 	}
 }
 

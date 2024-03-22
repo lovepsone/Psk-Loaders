@@ -37,6 +37,9 @@ class MainEngenie {
 		_controls.UpdateEvents();
 
 		const panel = new GUI({width: 310});
+		const Visibility = panel.addFolder('Visibility');
+		const ShowModel = Visibility.add({'show model': true}, 'show model');
+		const ShowSkeleton = Visibility.add({'show skeleton': false}, 'show skeleton');
 		const fCharacters = panel.addFolder('Characters');
 		const changeHelmet = fCharacters.add({Helmet: 'none'}, 'Helmet').options(['none', 'Medium', 'Heavy', 'Biker', 'Military2', 'Military3', 'Stalker', 'Bandit', 'Edge']);
 		const changeMask = fCharacters.add({Mask: 'none'}, 'Mask').options(['none', 'Military', 'MilitaryRespirator', 'RespiratorMK1', 'RespiratorMK2']);
@@ -71,6 +74,14 @@ class MainEngenie {
 
 		});
 
+		ShowModel.onChange(function(e) {
+
+			Object.values(model.getDataCharacters()).forEach(values => {
+
+				if (values instanceof THREE.LOD || values instanceof THREE.Mesh) values.visible = e;
+			});
+		});
+		ShowSkeleton.onChange(function(e) { model.setHelperSkelet(null, e) });
 		changeHelmet.onChange(function(e) { model.UpdateModel(e, 'helmet'); });
 		changeBack.onChange(function(e) { model.UpdateModel(e, 'back'); });
 		changeMask.onChange(function(e) { model.UpdateModel(e, 'mask'); });
