@@ -172,7 +172,7 @@ class PSALoader extends THREE.Loader {
                         }
                     }
 
-                    let animation = [];
+                    let animation = [], prepareBones = [];
 
                     for (let i = 0; i < Anim.length; i++) {
 
@@ -208,7 +208,6 @@ class PSALoader extends THREE.Loader {
 
                             if (cfgAnim[Anim[i].Name][j] !== undefined) {
 
-                                console.log(quat[j]);
                                 /*
                                 bloks type
                                 [AnimSet] mode 1 - bAnimRotationOnly 1(false), 0(true)
@@ -248,28 +247,27 @@ class PSALoader extends THREE.Loader {
                                                 break;
 
                                             case 'all': {
-
                                                 }
                                                 break;
                                         }
                                     }
                                         break;
                                 }
-
                             } else {
+
                                 const t = new Float32Array(times[j]);
                                 const p = new Float32Array(pos[j]);
                                 const q = new Float32Array(quat[j]);
                                 KeyframeTracks.push(new THREE.VectorKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.position`, t, p));
                                 KeyframeTracks.push(new THREE.QuaternionKeyframeTrack(`${BonesAnim[j].name.toLowerCase()}.quaternion`, t, q));
                             }
-
                         }
 
                         animation.push(new THREE.AnimationClip(Anim[i].Name, undefined,  KeyframeTracks));
+                        prepareBones.push(BonesAnim);
                     }
 
-                    onLoad(animation);
+                    onLoad({animation, prepareBones});
                 }, (error) => {
 
                     console.error(error);
